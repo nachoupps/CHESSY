@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Game } from '@/lib/game';
 import { Square } from './Square';
 import { CoordinateInput } from './CoordinateInput';
-import { SavedGame, saveGame, updatePlayerStats } from '@/lib/storage';
+import { SavedGame, saveGame, updatePlayerStats, getPlayers } from '@/lib/storage';
 import { CapturedPieces } from './CapturedPieces';
 import { OpeningBot } from './OpeningBot';
 import { detectOpening, Opening } from '@/lib/openings';
@@ -57,18 +57,23 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
         setCapturedBlack(capB);
     }, [game]);
 
-    const concludeGame = useCallback((winner: 'w' | 'b' | 'draw', resultText: string) => {
-        // Update ELO only if Normal Mode (Ranked)
-        if (savedGame.mode === 'normal' || !savedGame.mode) {
+    const concludeGame = useCallback(async (winner: 'w' | 'b' | 'draw', resultText: string) => {
+        // Get player IDs
+        const players = await getPlayers();
+        const whitePlayerId = players.find(p => p.name === savedGame.whitePlayer)?.id;
+        const blackPlayerId = players.find(p => p.name === savedGame.blackPlayer)?.id;
+
+        // Update ELO only if Normal Mode (Ranked) and players exist
+        if ((savedGame.mode === 'normal' || !savedGame.mode) && whitePlayerId && blackPlayerId) {
             if (winner === 'w') {
-                updatePlayerStats(savedGame.whitePlayer, 'win', 10);
-                updatePlayerStats(savedGame.blackPlayer, 'loss', -5);
+                await updatePlayerStats(whitePlayerId, 'win', 10);
+                await updatePlayerStats(blackPlayerId, 'loss', -5);
             } else if (winner === 'b') {
-                updatePlayerStats(savedGame.blackPlayer, 'win', 10);
-                updatePlayerStats(savedGame.whitePlayer, 'loss', -5);
+                await updatePlayerStats(blackPlayerId, 'win', 10);
+                await updatePlayerStats(whitePlayerId, 'loss', -5);
             } else {
-                updatePlayerStats(savedGame.whitePlayer, 'draw', 2);
-                updatePlayerStats(savedGame.blackPlayer, 'draw', 2);
+                await updatePlayerStats(whitePlayerId, 'draw', 2);
+                await updatePlayerStats(blackPlayerId, 'draw', 2);
             }
         }
 
@@ -79,7 +84,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
             lastUpdated: Date.now(),
             winner
         };
-        saveGame(updatedGame);
+        await saveGame(updatedGame);
         setGameResult(resultText);
         alert(`JUEGO TERMINADO: ${resultText}`);
     }, [game, savedGame]);
@@ -104,7 +109,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
     }, [game, savedGame, concludeGame]);
 
     // Forzar re-render cuando cambia el estado del juego
-    const updateGame = useCallback(() => {
+    const updateGame = useCallback(async () => {
         const newFen = game.fen;
         setFen(newFen);
         setHistory(game.history());
@@ -121,7 +126,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
 
         // Guardar estado si no ha terminado
         if (!savedGame.winner) {
-            saveGame({
+            await saveGame({
                 ...savedGame,
                 fen: newFen,
                 lastUpdated: Date.now()
@@ -316,7 +321,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
                     {/* Emergency Undo Button */}
                     {!savedGame.undoUsed && !savedGame.winner && history.length > 0 && (
                         <button
-                            onClick={() => {
+                            onClick={async () => {
                                 if (confirm('⚠ EMERGENCY UNDO: Solo puedes usar esto UNA VEZ por partida. ¿Retroceder el último movimiento?')) {
                                     game.undo(); // Undo last move
 
@@ -333,7 +338,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
                                         lastUpdated: Date.now(),
                                         undoUsed: true
                                     };
-                                    saveGame(updatedGame);
+                                    await saveGame(updatedGame);
 
                                     // Force update parent state if needed (though Board uses local savedGame prop, we might need to reload page or update prop? 
                                     // Actually, Board receives savedGame as prop, but we are mutating local state mostly. 

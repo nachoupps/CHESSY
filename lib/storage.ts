@@ -20,91 +20,154 @@ export interface Player {
     draws: number;
 }
 
-const STORAGE_KEY_GAMES = 'chess_app_games';
-const STORAGE_KEY_PLAYERS = 'chess_app_players';
+// --- Players API ---
 
-// --- Games ---
-
-export const getGames = (): SavedGame[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(STORAGE_KEY_GAMES);
-    return stored ? JSON.parse(stored) : [];
-};
-
-export const saveGame = (game: SavedGame) => {
-    const games = getGames();
-    const index = games.findIndex((g) => g.id === game.id);
-    if (index >= 0) {
-        games[index] = game;
-    } else {
-        games.push(game);
-    }
-    localStorage.setItem(STORAGE_KEY_GAMES, JSON.stringify(games));
-};
-
-export const archiveGame = (gameId: string) => {
-    const games = getGames();
-    const index = games.findIndex((g) => g.id === gameId);
-    if (index >= 0) {
-        games[index].archived = true;
-        localStorage.setItem(STORAGE_KEY_GAMES, JSON.stringify(games));
+export const getPlayers = async (): Promise<Player[]> => {
+    try {
+        const response = await fetch('/api/players');
+        if (!response.ok) throw new Error('Failed to fetch players');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching players:', error);
+        return [];
     }
 };
 
-export const deleteGame = (gameId: string) => {
-    const games = getGames();
-    const filtered = games.filter((g) => g.id !== gameId);
-    localStorage.setItem(STORAGE_KEY_GAMES, JSON.stringify(filtered));
-};
+export const registerPlayer = async (name: string): Promise<Player | null> => {
+    try {
+        const response = await fetch('/api/players', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
 
-export const createNewGame = (name: string, whitePlayer: string, blackPlayer: string, mode: 'normal' | 'learning' | 'simulation' = 'normal'): SavedGame => {
-    const newGame: SavedGame = {
-        id: crypto.randomUUID(),
-        name,
-        whitePlayer,
-        blackPlayer,
-        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', // Start FEN
-        lastUpdated: Date.now(),
-        mode
-    };
-    saveGame(newGame);
-    return newGame;
-};
+        if (response.status === 409) {
+            return null; // Player already exists
+        }
 
-// --- Players ---
-
-export const getPlayers = (): Player[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem(STORAGE_KEY_PLAYERS);
-    return stored ? JSON.parse(stored) : [];
-};
-
-export const registerPlayer = (name: string): Player | null => {
-    const players = getPlayers();
-    if (players.find(p => p.name.toLowerCase() === name.toLowerCase())) {
-        return null; // Player already exists
-    }
-    const newPlayer: Player = {
-        id: crypto.randomUUID(),
-        name,
-        elo: 10, // Start with 10 ELO
-        wins: 0,
-        losses: 0,
-        draws: 0
-    };
-    players.push(newPlayer);
-    localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
-    return newPlayer;
-};
-
-export const updatePlayerStats = (playerName: string, result: 'win' | 'loss' | 'draw', eloChange: number) => {
-    const players = getPlayers();
-    const index = players.findIndex(p => p.name === playerName);
-    if (index >= 0) {
-        players[index].elo += eloChange;
-        if (result === 'win') players[index].wins++;
-        if (result === 'loss') players[index].losses++;
-        if (result === 'draw') players[index].draws++;
-        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
+        if (!response.ok) throw new Error('Failed to register player');
+        return await response.json();
+    } catch (error) {
+        console.error('Error registering player:', error);
+        return null;
     }
 };
+
+export const updatePlayerStats = async (
+    playerId: string,
+    result: 'win' | 'loss' | 'draw',
+    eloChange: number
+): Promise<void> => {
+    try {
+        const response = await fetch(`/api/players/${playerId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ result, eloChange })
+        });
+
+        if (!response.ok) throw new Error('Failed to update player stats');
+    } catch (error) {
+        console.error('Error updating player stats:', error);
+    }
+};
+
+export const clearPlayers = async (pin: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/players', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin })
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error clearing players:', error);
+        return false;
+    }
+};
+
+// --- Games API ---
+
+export const getGames = async (): Promise<SavedGame[]> => {
+    try {
+        const response = await fetch('/api/games');
+        if (!response.ok) throw new Error('Failed to fetch games');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching games:', error);
+        return [];
+    }
+};
+
+export const getGame = async (gameId: string): Promise<SavedGame | null> => {
+    try {
+        const response = await fetch(`/api/games/${gameId}`);
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching game:', error);
+        return null;
+    }
+};
+
+export const saveGame = async (game: SavedGame): Promise<void> => {
+    try {
+        const response = await fetch(`/api/games/${game.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(game)
+        });
+
+        if (!response.ok) throw new Error('Failed to save game');
+    } catch (error) {
+        console.error('Error saving game:', error);
+    }
+};
+
+export const archiveGame = async (gameId: string): Promise<void> => {
+    try {
+        const response = await fetch(`/api/games/${gameId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archived: true })
+        });
+
+        if (!response.ok) throw new Error('Failed to archive game');
+    } catch (error) {
+        console.error('Error archiving game:', error);
+    }
+};
+
+export const deleteGame = async (gameId: string): Promise<void> => {
+    try {
+        const response = await fetch(`/api/games/${gameId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Failed to delete game');
+    } catch (error) {
+        console.error('Error deleting game:', error);
+    }
+};
+
+export const createNewGame = async (
+    name: string,
+    whitePlayer: string,
+    blackPlayer: string,
+    mode: 'normal' | 'learning' | 'simulation' = 'normal'
+): Promise<SavedGame | null> => {
+    try {
+        const response = await fetch('/api/games', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, whitePlayer, blackPlayer, mode })
+        });
+
+        if (!response.ok) throw new Error('Failed to create game');
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating game:', error);
+        return null;
+    }
+};
+

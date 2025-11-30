@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getGames, createNewGame, SavedGame, Player, getPlayers, registerPlayer, archiveGame } from '@/lib/storage';
+import { getGames, createNewGame, SavedGame, Player, getPlayers, registerPlayer, archiveGame, clearPlayers } from '@/lib/storage';
 
 interface DashboardProps {
     onSelectGame: (game: SavedGame) => void;
@@ -16,43 +16,79 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
     const [newPlayerName, setNewPlayerName] = useState('');
     const [showArchived, setShowArchived] = useState(false);
     const [gameMode, setGameMode] = useState<'normal' | 'learning' | 'simulation'>('normal');
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        setGames(getGames());
-        setPlayers(getPlayers());
+        loadData();
     }, []);
 
-    const handleCreate = (e: React.FormEvent) => {
+    const loadData = async () => {
+        setLoading(true);
+        const [gamesData, playersData] = await Promise.all([
+            getGames(),
+            getPlayers()
+        ]);
+        setGames(gamesData);
+        setPlayers(playersData);
+        setLoading(false);
+    };
+
+    const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newGameName.trim() || !whitePlayer || !blackPlayer) return;
         if (whitePlayer === blackPlayer) {
             alert('Los agentes deben ser diferentes.');
             return;
         }
-        const game = createNewGame(newGameName, whitePlayer, blackPlayer, gameMode);
-        setGames(getGames());
-        setNewGameName('');
-        setWhitePlayer('');
-        setBlackPlayer('');
-        setGameMode('normal');
-        onSelectGame(game);
+        setSaving(true);
+        const game = await createNewGame(newGameName, whitePlayer, blackPlayer, gameMode);
+        if (game) {
+            await loadData();
+            setNewGameName('');
+            setWhitePlayer('');
+            setBlackPlayer('');
+            setGameMode('normal');
+            onSelectGame(game);
+        }
+        setSaving(false);
     };
 
-    const handleRegisterPlayer = (e: React.FormEvent) => {
+    const handleRegisterPlayer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newPlayerName.trim()) return;
-        const player = registerPlayer(newPlayerName.trim());
+        setSaving(true);
+        const player = await registerPlayer(newPlayerName.trim());
         if (player) {
-            setPlayers(getPlayers());
+            await loadData();
             setNewPlayerName('');
         } else {
             alert('Este agente ya existe en la base de datos.');
         }
+        setSaving(false);
     };
 
-    const handleArchive = (gameId: string) => {
-        archiveGame(gameId);
-        setGames(getGames());
+    const handleArchive = async (gameId: string) => {
+        await archiveGame(gameId);
+        await loadData();
+    };
+
+    const handleClearPlayers = async () => {
+        const code = prompt("🔒 ENTER SECURITY CODE TO CLEAR DATABASE:");
+        if (code === "0000") {
+            if (confirm("⚠ WARNING: THIS WILL PERMANENTLY DELETE ALL AGENTS. PROCEED?")) {
+                setSaving(true);
+                const success = await clearPlayers(code);
+                if (success) {
+                    await loadData();
+                } else {
+                    alert("⛔ FAILED TO CLEAR DATABASE");
+                }
+                setSaving(false);
+            }
+        } else if (code !== null) {
+            alert("⛔ ACCESS DENIED: INVALID SECURITY CODE");
+        }
     };
 
     return (
@@ -116,8 +152,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                         </select>
                     </div>
 
-                    <button type="submit" className="bg-gradient-to-r from-ai-accent to-ai-highlight text-ai-bg font-bold py-3 px-6 rounded-lg shadow-[0_0_20px_rgba(0,255,255,0.5)] hover:shadow-[0_0_30px_rgba(0,255,255,0.8)] active:scale-95 transition-all uppercase tracking-widest border-2 border-ai-accent">
-                        🚀 INICIAR MISION
+                    <button type="submit" disabled={saving || loading} className="bg-gradient-to-r from-ai-accent to-ai-highlight text-ai-bg font-bold py-3 px-6 rounded-lg shadow-[0_0_20px_rgba(0,255,255,0.5)] hover:shadow-[0_0_30px_rgba(0,255,255,0.8)] active:scale-95 transition-all uppercase tracking-widest border-2 border-ai-accent disabled:opacity-50 disabled:cursor-not-allowed">
+                        {saving ? '⏳ PROCESANDO...' : '🚀 INICIAR MISION'}
                     </button>
                 </form>
 
@@ -133,7 +169,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                             {showArchived ? '📂 SHOW ACTIVE' : '📁 SHOW ARCHIVED'}
                         </button>
                     </div>
-                    {games.filter(g => showArchived ? g.archived : !g.archived).length === 0 ? (
+                    {loading ? (
+                        <p className="text-ai-accent text-center italic font-mono border border-dashed border-ai-accent p-4 rounded animate-pulse">
+                            ⏳ LOADING MISSIONS...
+                        </p>
+                    ) : games.filter(g => showArchived ? g.archived : !g.archived).length === 0 ? (
                         <p className="text-slate-400 text-center italic font-mono border border-dashed border-slate-600 p-4 rounded">
                             {showArchived ? 'NO ARCHIVED GAMES.' : 'NO HAY DATOS DE INTELIGENCIA.'}
                         </p>
@@ -199,8 +239,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                             className="bg-black bg-opacity-70 border-2 border-ai-highlight border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-highlight focus:shadow-[0_0_15px_rgba(255,0,255,0.4)] placeholder-ai-text placeholder-opacity-40 uppercase w-full transition-all"
                             required
                         />
-                        <button type="submit" className="bg-gradient-to-r from-ai-highlight to-purple-600 text-white px-4 py-3 font-bold uppercase tracking-widest border-2 border-ai-highlight hover:shadow-[0_0_25px_rgba(255,0,255,0.6)] active:scale-95 transition-all text-sm rounded-lg">
-                            REGISTRAR AGENTE
+                        <button type="submit" disabled={saving || loading} className="bg-gradient-to-r from-ai-highlight to-purple-600 text-white px-4 py-3 font-bold uppercase tracking-widest border-2 border-ai-highlight hover:shadow-[0_0_25px_rgba(255,0,255,0.6)] active:scale-95 transition-all text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            {saving ? '⏳ SAVING...' : 'REGISTRAR AGENTE'}
                         </button>
                     </form>
                 </div>
@@ -213,25 +253,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                         </div>
                         {players.length > 0 && (
                             <button
-                                onClick={() => {
-                                    const code = prompt("🔒 ENTER SECURITY CODE TO CLEAR DATABASE:");
-                                    if (code === "0000") {
-                                        if (confirm("⚠ WARNING: THIS WILL PERMANENTLY DELETE ALL AGENTS. PROCEED?")) {
-                                            localStorage.removeItem('chess_app_players');
-                                            setPlayers([]);
-                                        }
-                                    } else if (code !== null) {
-                                        alert("⛔ ACCESS DENIED: INVALID SECURITY CODE");
-                                    }
-                                }}
-                                className="text-[10px] px-2 py-1 bg-red-900/50 border border-red-500 text-red-400 hover:bg-red-900 hover:text-white transition-all rounded uppercase font-bold"
+                                onClick={handleClearPlayers}
+                                disabled={saving || loading}
+                                className="text-[10px] px-2 py-1 bg-red-900/50 border border-red-500 text-red-400 hover:bg-red-900 hover:text-white transition-all rounded uppercase font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 🗑️ CLEAR
                             </button>
                         )}
                     </h3>
                     <div className="flex flex-col gap-2">
-                        {players.length === 0 ? (
+                        {loading ? (
+                            <p className="text-ai-accent text-center italic font-mono text-sm animate-pulse">⏳ LOADING...</p>
+                        ) : players.length === 0 ? (
                             <p className="text-slate-400 text-center italic font-mono text-sm">SIN AGENTES REGISTRADOS</p>
                         ) : (
                             players.sort((a, b) => b.elo - a.elo).map((player, index) => (
