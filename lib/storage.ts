@@ -24,7 +24,7 @@ export interface Player {
 
 export const getPlayers = async (): Promise<Player[]> => {
     try {
-        const response = await fetch('/api/players');
+        const response = await fetch('/api/players', { cache: 'no-store' });
         if (!response.ok) throw new Error('Failed to fetch players');
         return await response.json();
     } catch (error) {
@@ -38,7 +38,8 @@ export const registerPlayer = async (name: string): Promise<Player | null> => {
         const response = await fetch('/api/players', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
+            body: JSON.stringify({ name }),
+            cache: 'no-store'
         });
 
         if (response.status === 409) {
@@ -62,7 +63,8 @@ export const updatePlayerStats = async (
         const response = await fetch(`/api/players/${playerId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ result, eloChange })
+            body: JSON.stringify({ result, eloChange }),
+            cache: 'no-store'
         });
 
         if (!response.ok) throw new Error('Failed to update player stats');
@@ -76,7 +78,8 @@ export const clearPlayers = async (pin: string): Promise<boolean> => {
         const response = await fetch('/api/players', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pin })
+            body: JSON.stringify({ pin }),
+            cache: 'no-store'
         });
 
         return response.ok;
@@ -90,7 +93,7 @@ export const clearPlayers = async (pin: string): Promise<boolean> => {
 
 export const getGames = async (): Promise<SavedGame[]> => {
     try {
-        const response = await fetch('/api/games');
+        const response = await fetch('/api/games', { cache: 'no-store' });
         if (!response.ok) throw new Error('Failed to fetch games');
         return await response.json();
     } catch (error) {
@@ -101,7 +104,7 @@ export const getGames = async (): Promise<SavedGame[]> => {
 
 export const getGame = async (gameId: string): Promise<SavedGame | null> => {
     try {
-        const response = await fetch(`/api/games/${gameId}`);
+        const response = await fetch(`/api/games/${gameId}`, { cache: 'no-store' });
         if (!response.ok) return null;
         return await response.json();
     } catch (error) {
@@ -115,7 +118,8 @@ export const saveGame = async (game: SavedGame): Promise<void> => {
         const response = await fetch(`/api/games/${game.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(game)
+            body: JSON.stringify(game),
+            cache: 'no-store'
         });
 
         if (!response.ok) throw new Error('Failed to save game');
@@ -129,7 +133,8 @@ export const archiveGame = async (gameId: string): Promise<void> => {
         const response = await fetch(`/api/games/${gameId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ archived: true })
+            body: JSON.stringify({ archived: true }),
+            cache: 'no-store'
         });
 
         if (!response.ok) throw new Error('Failed to archive game');
@@ -141,7 +146,8 @@ export const archiveGame = async (gameId: string): Promise<void> => {
 export const deleteGame = async (gameId: string): Promise<void> => {
     try {
         const response = await fetch(`/api/games/${gameId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            cache: 'no-store'
         });
 
         if (!response.ok) throw new Error('Failed to delete game');
@@ -160,7 +166,8 @@ export const createNewGame = async (
         const response = await fetch('/api/games', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, whitePlayer, blackPlayer, mode })
+            body: JSON.stringify({ name, whitePlayer, blackPlayer, mode }),
+            cache: 'no-store'
         });
 
         if (!response.ok) throw new Error('Failed to create game');

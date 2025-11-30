@@ -3,13 +3,37 @@ import kv from '@/lib/kv';
 import { SavedGame } from '@/lib/storage';
 
 const GAMES_KEY = 'chess:games';
+export const dynamic = 'force-dynamic';
 
 // GET /api/games - Fetch all games
 export async function GET() {
     try {
-        const games = await kv.get<SavedGame[]>(GAMES_KEY) || [];
+        const gamesDict = await kv.hgetall<Record<string, SavedGame>>(GAMES_KEY) || {};
+        const games = Object.values(gamesDict);
         return NextResponse.json(games);
-    } catch (error) {
+    } catch (error: any) {
+        // Handle migration from String (old format) to Hash (new format)
+        if (error.message && error.message.includes('WRONGTYPE')) {
+            console.log('Migrating games from String to Hash...');
+            try {
+                const oldGames = await kv.get<SavedGame[]>(GAMES_KEY);
+                if (Array.isArray(oldGames) && oldGames.length > 0) {
+                    await kv.del(GAMES_KEY);
+                    const newHash: Record<string, SavedGame> = {};
+                    for (const g of oldGames) {
+                        newHash[g.id] = g;
+                    }
+                    await kv.hset(GAMES_KEY, newHash);
+                    return NextResponse.json(oldGames);
+                } else {
+                    await kv.del(GAMES_KEY);
+                    return NextResponse.json([]);
+                }
+            } catch (migrationError) {
+                console.error('Migration failed:', migrationError);
+                return NextResponse.json({ error: 'Failed to migrate data' }, { status: 500 });
+            }
+        }
         console.error('Error fetching games:', error);
         return NextResponse.json({ error: 'Failed to fetch games' }, { status: 500 });
     }
@@ -24,8 +48,6 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const games = await kv.get<SavedGame[]>(GAMES_KEY) || [];
-
         const newGame: SavedGame = {
             id: crypto.randomUUID(),
             name,
@@ -37,8 +59,8 @@ export async function POST(request: Request) {
             undoUsed: false
         };
 
-        games.push(newGame);
-        await kv.set(GAMES_KEY, games);
+        // Use hset for atomic addition
+        await kv.hset(GAMES_KEY, { [newGame.id]: newGame });
 
         return NextResponse.json(newGame, { status: 201 });
     } catch (error) {

@@ -3,13 +3,39 @@ import kv from '@/lib/kv';
 import { Player } from '@/lib/storage';
 
 const PLAYERS_KEY = 'chess:players';
+export const dynamic = 'force-dynamic';
 
 // GET /api/players - Fetch all players
 export async function GET() {
     try {
-        const players = await kv.get<Player[]>(PLAYERS_KEY) || [];
+        const playersDict = await kv.hgetall<Record<string, Player>>(PLAYERS_KEY) || {};
+        const players = Object.values(playersDict);
         return NextResponse.json(players);
-    } catch (error) {
+    } catch (error: any) {
+        // Handle migration from String (old format) to Hash (new format)
+        if (error.message && error.message.includes('WRONGTYPE')) {
+            console.log('Migrating players from String to Hash...');
+            try {
+                const oldPlayers = await kv.get<Player[]>(PLAYERS_KEY);
+                if (Array.isArray(oldPlayers) && oldPlayers.length > 0) {
+                    await kv.del(PLAYERS_KEY);
+                    const pipeline = kv.pipeline();
+                    const newHash: Record<string, Player> = {};
+                    for (const p of oldPlayers) {
+                        newHash[p.id] = p;
+                    }
+                    await kv.hset(PLAYERS_KEY, newHash);
+                    return NextResponse.json(oldPlayers);
+                } else {
+                    // If empty or invalid, just delete and return empty
+                    await kv.del(PLAYERS_KEY);
+                    return NextResponse.json([]);
+                }
+            } catch (migrationError) {
+                console.error('Migration failed:', migrationError);
+                return NextResponse.json({ error: 'Failed to migrate data' }, { status: 500 });
+            }
+        }
         console.error('Error fetching players:', error);
         return NextResponse.json({ error: 'Failed to fetch players' }, { status: 500 });
     }
@@ -24,9 +50,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid player name' }, { status: 400 });
         }
 
-        const players = await kv.get<Player[]>(PLAYERS_KEY) || [];
-
         // Check if player already exists
+        // With Hashes, we still need to check all values for name uniqueness
+        const playersDict = await kv.hgetall<Record<string, Player>>(PLAYERS_KEY) || {};
+        const players = Object.values(playersDict);
+
         if (players.find(p => p.name.toLowerCase() === name.toLowerCase())) {
             return NextResponse.json({ error: 'Player already exists' }, { status: 409 });
         }
@@ -40,8 +68,8 @@ export async function POST(request: Request) {
             draws: 0
         };
 
-        players.push(newPlayer);
-        await kv.set(PLAYERS_KEY, players);
+        // Use hset for atomic addition (field is ID)
+        await kv.hset(PLAYERS_KEY, { [newPlayer.id]: newPlayer });
 
         return NextResponse.json(newPlayer, { status: 201 });
     } catch (error) {
@@ -59,7 +87,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Invalid PIN' }, { status: 403 });
         }
 
-        await kv.set(PLAYERS_KEY, []);
+        await kv.del(PLAYERS_KEY);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error clearing players:', error);

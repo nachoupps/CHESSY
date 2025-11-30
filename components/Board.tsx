@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Game } from '@/lib/game';
 import { Square } from './Square';
 import { CoordinateInput } from './CoordinateInput';
-import { SavedGame, saveGame, updatePlayerStats, getPlayers } from '@/lib/storage';
+import { SavedGame, saveGame, updatePlayerStats, getPlayers, getGame } from '@/lib/storage';
 import { CapturedPieces } from './CapturedPieces';
 import { OpeningBot } from './OpeningBot';
 import { detectOpening, Opening } from '@/lib/openings';
@@ -139,6 +139,30 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
     useEffect(() => {
         calculateCaptured();
     }, [calculateCaptured]);
+
+    // Polling for game updates
+    useEffect(() => {
+        if (savedGame.winner) return; // Don't poll if game is finished
+
+        const interval = setInterval(async () => {
+            const latestGame = await getGame(savedGame.id);
+            if (latestGame && latestGame.fen !== game.fen) {
+                // Update local game state if FEN has changed (opponent moved)
+                const newGame = new Game(latestGame.fen);
+                setGame(newGame);
+                setFen(latestGame.fen);
+                setHistory(newGame.history());
+
+                // Update other states
+                if (latestGame.winner) {
+                    setGameResult(latestGame.winner === 'draw' ? 'EMPATE' : `VICTORIA: ${latestGame.winner === 'w' ? latestGame.whitePlayer : latestGame.blackPlayer}`);
+                    alert(`JUEGO ACTUALIZADO: ${latestGame.winner === 'draw' ? 'EMPATE' : 'VICTORIA'}`);
+                }
+            }
+        }, 2000); // Poll every 2 seconds
+
+        return () => clearInterval(interval);
+    }, [savedGame.id, savedGame.winner, game.fen]);
 
     const onDrop = (from: string, to: string) => {
         const move = game.move(from, to);

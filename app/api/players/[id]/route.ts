@@ -3,6 +3,7 @@ import kv from '@/lib/kv';
 import { Player } from '@/lib/storage';
 
 const PLAYERS_KEY = 'chess:players';
+export const dynamic = 'force-dynamic';
 
 // PATCH /api/players/[id] - Update player stats
 export async function PATCH(
@@ -21,22 +22,23 @@ export async function PATCH(
             return NextResponse.json({ error: 'Invalid ELO change' }, { status: 400 });
         }
 
-        const players = await kv.get<Player[]>(PLAYERS_KEY) || [];
-        const playerIndex = players.findIndex(p => p.id === id);
+        // Fetch only the specific player
+        const player = await kv.hget<Player>(PLAYERS_KEY, id);
 
-        if (playerIndex === -1) {
+        if (!player) {
             return NextResponse.json({ error: 'Player not found' }, { status: 404 });
         }
 
         // Update player stats
-        players[playerIndex].elo += eloChange;
-        if (result === 'win') players[playerIndex].wins++;
-        if (result === 'loss') players[playerIndex].losses++;
-        if (result === 'draw') players[playerIndex].draws++;
+        player.elo += eloChange;
+        if (result === 'win') player.wins++;
+        if (result === 'loss') player.losses++;
+        if (result === 'draw') player.draws++;
 
-        await kv.set(PLAYERS_KEY, players);
+        // Save back using hset (atomic update for this field)
+        await kv.hset(PLAYERS_KEY, { [id]: player });
 
-        return NextResponse.json(players[playerIndex]);
+        return NextResponse.json(player);
     } catch (error) {
         console.error('Error updating player:', error);
         return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });

@@ -19,19 +19,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
     useEffect(() => {
         loadData();
+
+        // Poll for updates every 5 seconds
+        const interval = setInterval(() => {
+            loadData();
+        }, 5000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const loadData = async () => {
-        setLoading(true);
-        const [gamesData, playersData] = await Promise.all([
-            getGames(),
-            getPlayers()
-        ]);
-        setGames(gamesData);
-        setPlayers(playersData);
-        setLoading(false);
+        // Don't set loading to true for background polling to avoid flickering
+        // Only set it if it's the initial load or manual refresh
+        if (!lastUpdated) setLoading(true);
+
+        try {
+            const [gamesData, playersData] = await Promise.all([
+                getGames(),
+                getPlayers()
+            ]);
+            setGames(gamesData);
+            setPlayers(playersData);
+            setLastUpdated(new Date());
+        } catch (error) {
+            console.error("Failed to load data:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -62,8 +80,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
         if (player) {
             await loadData();
             setNewPlayerName('');
+            alert('✅ AGENTE REGISTRADO EXITOSAMENTE');
         } else {
-            alert('Este agente ya existe en la base de datos.');
+            // registerPlayer returns null if 409 Conflict (already exists) or error
+            // We should ideally distinguish, but for now assuming null means duplicate or error
+            alert('⛔ ERROR: El agente ya existe o hubo un problema de conexión.');
         }
         setSaving(false);
     };
@@ -162,12 +183,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                         <h3 className="text-sm font-bold text-ai-accent uppercase tracking-wider flex items-center gap-2">
                             <span className="animate-pulse">🎯</span> {showArchived ? 'ARCHIVED' : 'ACTIVE'} MISSIONS:
                         </h3>
-                        <button
-                            onClick={() => setShowArchived(!showArchived)}
-                            className="text-xs px-3 py-1 bg-ai-panel border border-ai-accent text-ai-accent hover:bg-ai-accent hover:text-ai-bg transition-all rounded uppercase font-bold"
-                        >
-                            {showArchived ? '📂 SHOW ACTIVE' : '📁 SHOW ARCHIVED'}
-                        </button>
+                        <div className="flex gap-2 items-center">
+                            {lastUpdated && (
+                                <span className="text-[10px] text-slate-500 font-mono hidden sm:inline-block">
+                                    UPDATED: {lastUpdated.toLocaleTimeString()}
+                                </span>
+                            )}
+                            <button
+                                onClick={() => loadData()}
+                                className="text-xs px-2 py-1 bg-blue-900/30 border border-blue-500 text-blue-400 hover:bg-blue-800 hover:text-white transition-all rounded uppercase font-bold"
+                                title="Force Refresh"
+                            >
+                                ↻
+                            </button>
+                            <button
+                                onClick={() => setShowArchived(!showArchived)}
+                                className="text-xs px-3 py-1 bg-ai-panel border border-ai-accent text-ai-accent hover:bg-ai-accent hover:text-ai-bg transition-all rounded uppercase font-bold"
+                            >
+                                {showArchived ? '📂 SHOW ACTIVE' : '📁 SHOW ARCHIVED'}
+                            </button>
+                        </div>
                     </div>
                     {loading ? (
                         <p className="text-ai-accent text-center italic font-mono border border-dashed border-ai-accent p-4 rounded animate-pulse">
@@ -283,6 +318,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                 </div>
 
 
+            </div>
+
+            {/* Version Indicator */}
+            <div className="fixed bottom-1 right-1 text-[9px] text-slate-600 font-mono opacity-50 pointer-events-none">
+                v2.0 - ATOMIC STORAGE
             </div>
         </div>
     );

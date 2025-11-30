@@ -3,6 +3,7 @@ import kv from '@/lib/kv';
 import { SavedGame } from '@/lib/storage';
 
 const GAMES_KEY = 'chess:games';
+export const dynamic = 'force-dynamic';
 
 // GET /api/games/[id] - Fetch specific game
 export async function GET(
@@ -11,8 +12,7 @@ export async function GET(
 ) {
     try {
         const { id } = params;
-        const games = await kv.get<SavedGame[]>(GAMES_KEY) || [];
-        const game = games.find(g => g.id === id);
+        const game = await kv.hget<SavedGame>(GAMES_KEY, id);
 
         if (!game) {
             return NextResponse.json({ error: 'Game not found' }, { status: 404 });
@@ -34,23 +34,22 @@ export async function PATCH(
         const { id } = params;
         const updates = await request.json();
 
-        const games = await kv.get<SavedGame[]>(GAMES_KEY) || [];
-        const gameIndex = games.findIndex(g => g.id === id);
+        const game = await kv.hget<SavedGame>(GAMES_KEY, id);
 
-        if (gameIndex === -1) {
+        if (!game) {
             return NextResponse.json({ error: 'Game not found' }, { status: 404 });
         }
 
         // Update game with new data
-        games[gameIndex] = {
-            ...games[gameIndex],
+        const updatedGame = {
+            ...game,
             ...updates,
             lastUpdated: Date.now()
         };
 
-        await kv.set(GAMES_KEY, games);
+        await kv.hset(GAMES_KEY, { [id]: updatedGame });
 
-        return NextResponse.json(games[gameIndex]);
+        return NextResponse.json(updatedGame);
     } catch (error) {
         console.error('Error updating game:', error);
         return NextResponse.json({ error: 'Failed to update game' }, { status: 500 });
@@ -64,10 +63,7 @@ export async function DELETE(
 ) {
     try {
         const { id } = params;
-        const games = await kv.get<SavedGame[]>(GAMES_KEY) || [];
-        const filteredGames = games.filter(g => g.id !== id);
-
-        await kv.set(GAMES_KEY, filteredGames);
+        await kv.hdel(GAMES_KEY, id);
 
         return NextResponse.json({ success: true });
     } catch (error) {
