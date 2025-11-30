@@ -20,6 +20,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
     const [saving, setSaving] = useState(false);
 
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [debugInfo, setDebugInfo] = useState<any>({ status: 'INIT', error: null, gamesCount: 0, playersCount: 0 });
+    const [showDebug, setShowDebug] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -38,15 +40,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
         if (!lastUpdated) setLoading(true);
 
         try {
-            const [gamesData, playersData] = await Promise.all([
-                getGames(),
-                getPlayers()
+            const start = Date.now();
+            const [gamesRes, playersRes] = await Promise.all([
+                fetch('/api/games', { cache: 'no-store' }),
+                fetch('/api/players', { cache: 'no-store' })
             ]);
+
+            const latency = Date.now() - start;
+
+            if (!gamesRes.ok || !playersRes.ok) {
+                throw new Error(`API Error: Games ${gamesRes.status} / Players ${playersRes.status}`);
+            }
+
+            const gamesData = await gamesRes.json();
+            const playersData = await playersRes.json();
+
             setGames(gamesData);
             setPlayers(playersData);
             setLastUpdated(new Date());
-        } catch (error) {
+            setDebugInfo({
+                status: 'OK',
+                latency,
+                gamesCount: Array.isArray(gamesData) ? gamesData.length : 'ERR',
+                playersCount: Array.isArray(playersData) ? playersData.length : 'ERR',
+                lastCheck: new Date().toLocaleTimeString()
+            });
+        } catch (error: any) {
             console.error("Failed to load data:", error);
+            setDebugInfo({
+                status: 'ERROR',
+                error: error.message || 'Unknown Error',
+                lastCheck: new Date().toLocaleTimeString()
+            });
         } finally {
             setLoading(false);
         }
@@ -320,9 +345,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
 
             </div>
 
-            {/* Version Indicator */}
-            <div className="fixed bottom-1 right-1 text-[9px] text-slate-600 font-mono opacity-50 pointer-events-none">
-                v2.0 - ATOMIC STORAGE
+            {/* Version Indicator & Debug Toggle */}
+            <div className="fixed bottom-1 right-1 flex flex-col items-end gap-1 pointer-events-auto">
+                <button
+                    onClick={() => setShowDebug(!showDebug)}
+                    className="text-[9px] text-slate-600 font-mono opacity-50 hover:opacity-100 transition-opacity"
+                >
+                    v2.1 - ATOMIC STORAGE (DEBUG)
+                </button>
+
+                {showDebug && (
+                    <div className="bg-black/90 border border-red-500 p-2 rounded text-[10px] font-mono text-green-400 w-64 shadow-lg">
+                        <h4 className="border-b border-red-500 mb-1 text-red-500 font-bold">SYSTEM DIAGNOSTICS</h4>
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                            <span>STATUS:</span> <span className={debugInfo.status === 'OK' ? 'text-green-400' : 'text-red-500 font-bold'}>{debugInfo.status}</span>
+                            <span>LATENCY:</span> <span>{debugInfo.latency || 0}ms</span>
+                            <span>GAMES:</span> <span>{debugInfo.gamesCount}</span>
+                            <span>PLAYERS:</span> <span>{debugInfo.playersCount}</span>
+                            <span>LAST CHECK:</span> <span>{debugInfo.lastCheck}</span>
+                        </div>
+                        {debugInfo.error && (
+                            <div className="mt-1 text-red-500 border-t border-red-500/50 pt-1 break-words">
+                                ERR: {debugInfo.error}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
