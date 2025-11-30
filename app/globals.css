@@ -1,26 +1,137 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ai-bg: #0a0e27;
+  --ai-panel: #1a1f3a;
+  --ai-text: #e0e7ff;
+  --ai-accent: #00ffff;
+  --ai-highlight: #ff00ff;
+  --ai-glow: #00ffff;
+  --background: var(--ai-bg);
+  --foreground: var(--ai-text);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ai-bg: var(--ai-bg);
+  --color-ai-panel: var(--ai-panel);
+  --color-ai-text: var(--ai-text);
+  --color-ai-accent: var(--ai-accent);
+  --color-ai-highlight: var(--ai-highlight);
+  --color-ai-glow: var(--ai-glow);
+  --font-ai: 'Inter', 'Roboto', 'Segoe UI', system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: var(--ai-bg);
+    --foreground: var(--ai-text);
+  }
+}
+
+/* Futuristic Animations */
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px var(--ai-accent), 0 0 10px var(--ai-accent), 0 0 15px var(--ai-accent);
+  }
+
+  50% {
+    box-shadow: 0 0 10px var(--ai-accent), 0 0 20px var(--ai-accent), 0 0 30px var(--ai-accent);
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes border-flow {
+  0% {
+    border-color: var(--ai-accent);
+  }
+
+  50% {
+    border-color: var(--ai-highlight);
+  }
+
+  100% {
+    border-color: var(--ai-accent);
   }
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1629 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-ai);
+  position: relative;
+  overflow-x: hidden;
+}
+
+
+/* Grid pattern overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ai-panel);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ai-accent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ai-highlight);
 }
