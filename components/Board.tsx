@@ -108,12 +108,15 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
         }
     }, [game, savedGame, concludeGame]);
 
+    const lastInteraction = React.useRef<number>(0);
+
     // Forzar re-render cuando cambia el estado del juego
     const updateGame = useCallback(async () => {
         const newFen = game.fen;
         setFen(newFen);
         setHistory(game.history());
         calculateCaptured();
+        lastInteraction.current = Date.now();
 
         // Detect opening
         const currentMoves = game.history();
@@ -145,6 +148,9 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
         if (savedGame.winner) return; // Don't poll if game is finished
 
         const interval = setInterval(async () => {
+            // Skip polling if we just interacted (prevents overwriting our own move before it saves)
+            if (Date.now() - lastInteraction.current < 3000) return;
+
             const latestGame = await getGame(savedGame.id);
             if (latestGame && latestGame.fen !== game.fen) {
                 // Update local game state if FEN has changed (opponent moved)
