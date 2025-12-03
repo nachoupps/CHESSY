@@ -149,7 +149,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
     const handleClearAllMissions = async () => {
         const code = prompt("🔒 ENTER SECURITY CODE TO DELETE ALL MISSIONS:");
         if (code === "0000") {
-            if (confirm("⚠ WARNING: THIS WILL PERMANENTLY DELETE ALL ACTIVE MISSIONS. PROCEED?")) {
+            if (confirm("⚠ WARNING: THIS WILL PERMANENTLY DELETE ALL MISSIONS (ACTIVE AND ARCHIVED). PROCEED?")) {
                 setSaving(true);
                 const success = await clearAllGames(code);
                 if (success) {
@@ -347,11 +347,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                             >
                                 {showArchived ? '📂 SHOW ACTIVE' : '📁 SHOW ARCHIVED'}
                             </button>
-                            {!showArchived && games.filter(g => !g.archived).length > 0 && (
+                            {games.length > 0 && (
                                 <button
                                     onClick={handleClearAllMissions}
                                     disabled={saving || loading}
                                     className="text-xs px-2 py-1 bg-red-900/50 border border-red-500 text-red-400 hover:bg-red-900 hover:text-white transition-all rounded uppercase font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Delete all missions (active and archived)"
                                 >
                                     🗑️ CLEAR ALL
                                 </button>
