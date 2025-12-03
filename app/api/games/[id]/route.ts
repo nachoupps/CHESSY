@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic';
 // GET /api/games/[id] - Fetch specific game
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = params;
+        const { id } = await context.params;
         const game = await kv.hget<SavedGame>(GAMES_KEY, id);
 
         if (!game) {
@@ -28,10 +28,10 @@ export async function GET(
 // PATCH /api/games/[id] - Update game state
 export async function PATCH(
     request: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = params;
+        const { id } = await context.params;
         const updates = await request.json();
 
         const game = await kv.hget<SavedGame>(GAMES_KEY, id);
@@ -59,10 +59,10 @@ export async function PATCH(
 // DELETE /api/games/[id] - Delete game
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = params;
+        const { id } = await context.params;
         await kv.hdel(GAMES_KEY, id);
 
         return NextResponse.json({ success: true });
