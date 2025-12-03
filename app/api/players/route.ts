@@ -57,9 +57,9 @@ export async function POST(request: Request) {
         // Check if player already exists
         // With Hashes, we still need to check all values for name uniqueness
         const playersDict = await kv.hgetall<Record<string, Player>>(PLAYERS_KEY) || {};
-        const players = Object.values(playersDict);
+        const players = Object.values(playersDict) as Player[];
 
-        if (players.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+        if (players.find((p: Player) => p.name.toLowerCase() === name.toLowerCase())) {
             return NextResponse.json({ error: 'Player already exists' }, { status: 409 });
         }
 
