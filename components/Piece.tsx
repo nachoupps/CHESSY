@@ -8,16 +8,18 @@ import Image from 'next/image';
 interface PieceProps {
     piece: ChessPiece;
     position: string;
+    canDrag?: boolean;
 }
 
-export const Piece: React.FC<PieceProps> = ({ piece, position }) => {
+export const Piece: React.FC<PieceProps> = ({ piece, position, canDrag = true }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
         type: 'PIECE',
         item: { type: 'PIECE', id: `${piece.color}${piece.type}`, position },
+        canDrag: () => canDrag,
         collect: (monitor) => ({
             isDragging: !!monitor.isDragging(),
         }),
-    }));
+    }), [canDrag, piece, position]);
 
     const pieceImage = `/pieces/${piece.color}${piece.type}.png`; // Asumiremos que tenemos imágenes o usaremos texto por ahora si no las hay.
 

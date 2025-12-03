@@ -68,3 +68,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to create game' }, { status: 500 });
     }
 }
+
+// DELETE /api/games - Clear all games (requires PIN 0000)
+export async function DELETE(request: Request) {
+    try {
+        const { pin } = await request.json();
+
+        if (pin !== '0000') {
+            return NextResponse.json({ error: 'Invalid security code' }, { status: 403 });
+        }
+
+        await kv.del(GAMES_KEY);
+        return NextResponse.json({ success: true }, { status: 200 });
+    } catch (error) {
+        console.error('Error clearing all games:', error);
+        return NextResponse.json({ error: 'Failed to clear games' }, { status: 500 });
+    }
+}

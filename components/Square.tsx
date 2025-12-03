@@ -11,9 +11,10 @@ interface SquareProps {
     piece: ChessPiece | null;
     isBlack: boolean;
     onDrop: (from: string, to: string) => void;
+    canDrag?: boolean;
 }
 
-export const Square: React.FC<SquareProps> = ({ position, piece, isBlack, onDrop }) => {
+export const Square: React.FC<SquareProps> = ({ position, piece, isBlack, onDrop, canDrag = true }) => {
     const [{ isOver, canDrop }, drop] = useDrop(() => ({
         accept: 'PIECE',
         drop: (item: { position: string }) => onDrop(item.position, position),
@@ -32,7 +33,7 @@ export const Square: React.FC<SquareProps> = ({ position, piece, isBlack, onDrop
                 isOver && canDrop && 'bg-[#00ffff] bg-opacity-30 shadow-[inset_0_0_20px_rgba(0,255,255,0.5)]'
             )}
         >
-            {piece && <Piece piece={piece} position={position} />}
+            {piece && <Piece piece={piece} position={position} canDrag={canDrag} />}
         </div>
     );
 };

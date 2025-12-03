@@ -18,6 +18,7 @@ export interface Player {
     wins: number;
     losses: number;
     draws: number;
+    pin: string; // 4-digit security pin
 }
 
 // --- Players API ---
@@ -33,12 +34,12 @@ export const getPlayers = async (): Promise<Player[]> => {
     }
 };
 
-export const registerPlayer = async (name: string): Promise<Player | null> => {
+export const registerPlayer = async (name: string, pin: string): Promise<Player | null> => {
     try {
         const response = await fetch('/api/players', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name }),
+            body: JSON.stringify({ name, pin }),
             cache: 'no-store'
         });
 
@@ -175,6 +176,22 @@ export const createNewGame = async (
     } catch (error) {
         console.error('Error creating game:', error);
         return null;
+    }
+};
+
+export const clearAllGames = async (pin: string): Promise<boolean> => {
+    try {
+        const response = await fetch('/api/games', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin }),
+            cache: 'no-store'
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error clearing all games:', error);
+        return false;
     }
 };
 

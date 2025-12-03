@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getGames, createNewGame, SavedGame, Player, getPlayers, registerPlayer, archiveGame, clearPlayers } from '@/lib/storage';
+import { getGames, createNewGame, SavedGame, Player, getPlayers, registerPlayer, archiveGame, clearPlayers, clearAllGames } from '@/lib/storage';
 
 interface DashboardProps {
-    onSelectGame: (game: SavedGame) => void;
+    onSelectGame: (game: SavedGame, userRole?: 'w' | 'b' | 'spectator') => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
@@ -14,10 +14,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
     const [whitePlayer, setWhitePlayer] = useState('');
     const [blackPlayer, setBlackPlayer] = useState('');
     const [newPlayerName, setNewPlayerName] = useState('');
+    const [newPlayerPin, setNewPlayerPin] = useState('');
     const [showArchived, setShowArchived] = useState(false);
     const [gameMode, setGameMode] = useState<'normal' | 'learning' | 'simulation'>('normal');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Login Modal State
+    const [selectedGameForLogin, setSelectedGameForLogin] = useState<SavedGame | null>(null);
+    const [loginPin, setLoginPin] = useState('');
+    const [loginError, setLoginError] = useState('');
 
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [debugInfo, setDebugInfo] = useState<any>({ status: 'INIT', error: null, gamesCount: 0, playersCount: 0 });
@@ -92,23 +98,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
             setWhitePlayer('');
             setBlackPlayer('');
             setGameMode('normal');
-            onSelectGame(game);
+            // Instead of selecting immediately, we let them click to login
+            // onSelectGame(game); 
         }
         setSaving(false);
     };
 
     const handleRegisterPlayer = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newPlayerName.trim()) return;
+        if (!newPlayerName.trim() || !newPlayerPin.trim() || newPlayerPin.length !== 4) {
+            alert('PIN must be 4 digits');
+            return;
+        }
         setSaving(true);
-        const player = await registerPlayer(newPlayerName.trim());
+        const player = await registerPlayer(newPlayerName.trim(), newPlayerPin);
         if (player) {
             await loadData();
             setNewPlayerName('');
+            setNewPlayerPin('');
             alert('✅ AGENTE REGISTRADO EXITOSAMENTE');
         } else {
-            // registerPlayer returns null if 409 Conflict (already exists) or error
-            // We should ideally distinguish, but for now assuming null means duplicate or error
             alert('⛔ ERROR: El agente ya existe o hubo un problema de conexión.');
         }
         setSaving(false);
@@ -137,8 +146,119 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
         }
     };
 
+    const handleClearAllMissions = async () => {
+        const code = prompt("🔒 ENTER SECURITY CODE TO DELETE ALL MISSIONS:");
+        if (code === "0000") {
+            if (confirm("⚠ WARNING: THIS WILL PERMANENTLY DELETE ALL ACTIVE MISSIONS. PROCEED?")) {
+                setSaving(true);
+                const success = await clearAllGames(code);
+                if (success) {
+                    await loadData();
+                    alert("✅ ALL MISSIONS DELETED SUCCESSFULLY");
+                } else {
+                    alert("⛔ FAILED TO DELETE MISSIONS");
+                }
+                setSaving(false);
+            }
+        } else if (code !== null) {
+            alert("⛔ ACCESS DENIED: INVALID SECURITY CODE");
+        }
+    };
+
+    const handleLogin = (role: 'w' | 'b' | 'spectator') => {
+        if (!selectedGameForLogin) return;
+
+        if (role === 'spectator') {
+            onSelectGame(selectedGameForLogin, 'spectator');
+            setSelectedGameForLogin(null);
+            return;
+        }
+
+        const playerName = role === 'w' ? selectedGameForLogin.whitePlayer : selectedGameForLogin.blackPlayer;
+        const player = players.find(p => p.name === playerName);
+
+        // If player not found or has no PIN (legacy), allow access (or default 0000)
+        const storedPin = player?.pin || '0000';
+
+        if (loginPin === storedPin) {
+            onSelectGame(selectedGameForLogin, role);
+            setSelectedGameForLogin(null);
+            setLoginPin('');
+            setLoginError('');
+        } else {
+            setLoginError('⛔ ACCESS DENIED: INVALID PIN');
+        }
+    };
+
     return (
         <div className="w-full max-w-4xl p-6 flex flex-col md:flex-row gap-8 relative z-10">
+
+            {/* Login Modal */}
+            {selectedGameForLogin && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-gradient-to-br from-ai-panel to-ai-bg border-2 border-ai-highlight p-6 rounded-lg shadow-[0_0_50px_rgba(0,255,255,0.5)] max-w-md w-full animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-xl font-bold text-ai-highlight mb-4 uppercase tracking-widest text-center border-b border-ai-accent pb-2">
+                            🔐 SECURITY CHECK
+                        </h3>
+                        <p className="text-ai-text text-center mb-6 font-mono text-sm">
+                            IDENTIFY YOURSELF TO ACCESS OPERATION: <br />
+                            <span className="text-white font-bold">{selectedGameForLogin.name}</span>
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            {/* White Player Login */}
+                            <div className="flex flex-col gap-2">
+                                <button
+                                    onClick={() => handleLogin('w')}
+                                    className="p-3 bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white transition-all rounded text-center group"
+                                >
+                                    <div className="text-xs text-slate-400 uppercase mb-1">PLAY AS WHITE</div>
+                                    <div className="text-lg font-bold text-white group-hover:text-ai-highlight">{selectedGameForLogin.whitePlayer}</div>
+                                </button>
+                            </div>
+
+                            {/* Black Player Login */}
+                            <div className="flex flex-col gap-2">
+                                <button
+                                    onClick={() => handleLogin('b')}
+                                    className="p-3 bg-black/30 border border-white/10 hover:bg-black/50 hover:border-ai-accent transition-all rounded text-center group"
+                                >
+                                    <div className="text-xs text-slate-400 uppercase mb-1">PLAY AS BLACK</div>
+                                    <div className="text-lg font-bold text-white group-hover:text-ai-accent">{selectedGameForLogin.blackPlayer}</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-xs text-ai-accent uppercase font-bold mb-2 text-center">ENTER 4-DIGIT PIN</label>
+                            <input
+                                type="text"
+                                maxLength={4}
+                                value={loginPin}
+                                onChange={(e) => { setLoginPin(e.target.value.replace(/\D/g, '')); setLoginError(''); }}
+                                className="w-full bg-black/50 border-2 border-ai-accent rounded px-4 py-3 text-center text-2xl tracking-[1em] text-white font-mono focus:outline-none focus:shadow-[0_0_20px_rgba(0,255,255,0.3)]"
+                                placeholder="0000"
+                            />
+                            {loginError && <p className="text-red-500 text-xs text-center mt-2 font-bold animate-pulse">{loginError}</p>}
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => handleLogin('spectator')}
+                                className="w-full py-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded uppercase font-bold text-xs tracking-wider transition-all"
+                            >
+                                👁 SPECTATE ONLY
+                            </button>
+                            <button
+                                onClick={() => { setSelectedGameForLogin(null); setLoginPin(''); setLoginError(''); }}
+                                className="w-full py-2 text-red-400 hover:text-red-300 uppercase font-bold text-xs tracking-wider transition-all"
+                            >
+                                CANCEL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Left Column: Game Control */}
             <div className="flex-1 bg-gradient-to-br from-ai-panel to-ai-bg border-2 border-ai-accent shadow-[0_0_30px_rgba(0,255,255,0.3)] p-6 h-fit rounded-lg backdrop-blur-sm">
@@ -208,7 +328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                         <h3 className="text-sm font-bold text-ai-accent uppercase tracking-wider flex items-center gap-2">
                             <span className="animate-pulse">🎯</span> {showArchived ? 'ARCHIVED' : 'ACTIVE'} MISSIONS:
                         </h3>
-                        <div className="flex gap-2 items-center">
+                        <div className="flex gap-2 items-center flex-wrap justify-end">
                             {lastUpdated && (
                                 <span className="text-[10px] text-slate-500 font-mono hidden sm:inline-block">
                                     UPDATED: {lastUpdated.toLocaleTimeString()}
@@ -227,6 +347,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                             >
                                 {showArchived ? '📂 SHOW ACTIVE' : '📁 SHOW ARCHIVED'}
                             </button>
+                            {!showArchived && games.filter(g => !g.archived).length > 0 && (
+                                <button
+                                    onClick={handleClearAllMissions}
+                                    disabled={saving || loading}
+                                    className="text-xs px-2 py-1 bg-red-900/50 border border-red-500 text-red-400 hover:bg-red-900 hover:text-white transition-all rounded uppercase font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    🗑️ CLEAR ALL
+                                </button>
+                            )}
                         </div>
                     </div>
                     {loading ? (
@@ -244,7 +373,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                 className="group p-3 bg-gradient-to-r from-ai-bg to-ai-panel border-2 border-slate-600 hover:border-ai-highlight transition-all rounded-lg relative"
                             >
                                 <div
-                                    onClick={() => onSelectGame(game)}
+                                    onClick={() => setSelectedGameForLogin(game)}
                                     className="cursor-pointer flex justify-between items-center"
                                 >
                                     <div className="flex-1">
@@ -299,6 +428,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                             className="bg-black bg-opacity-70 border-2 border-ai-highlight border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-highlight focus:shadow-[0_0_15px_rgba(255,0,255,0.4)] placeholder-ai-text placeholder-opacity-40 uppercase w-full transition-all"
                             required
                         />
+                        <input
+                            type="text"
+                            maxLength={4}
+                            pattern="\d{4}"
+                            value={newPlayerPin}
+                            onChange={(e) => setNewPlayerPin(e.target.value.replace(/\D/g, ''))}
+                            placeholder="SET 4-DIGIT PIN..."
+                            className="bg-black bg-opacity-70 border-2 border-ai-highlight border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-highlight focus:shadow-[0_0_15px_rgba(255,0,255,0.4)] placeholder-ai-text placeholder-opacity-40 uppercase w-full transition-all tracking-widest"
+                            required
+                        />
                         <button type="submit" disabled={saving || loading} className="bg-gradient-to-r from-ai-highlight to-purple-600 text-white px-4 py-3 font-bold uppercase tracking-widest border-2 border-ai-highlight hover:shadow-[0_0_25px_rgba(255,0,255,0.6)] active:scale-95 transition-all text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
                             {saving ? '⏳ SAVING...' : 'REGISTRAR AGENTE'}
                         </button>
@@ -351,7 +490,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                     onClick={() => setShowDebug(!showDebug)}
                     className="text-[9px] text-slate-600 font-mono opacity-50 hover:opacity-100 transition-opacity"
                 >
-                    v2.1 - ATOMIC STORAGE (DEBUG)
+                    v2.2 - SECURE UI (DEBUG)
                 </button>
 
                 {showDebug && (

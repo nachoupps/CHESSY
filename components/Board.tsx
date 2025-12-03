@@ -11,10 +11,11 @@ import { detectOpening, Opening } from '@/lib/openings';
 
 interface BoardProps {
     savedGame: SavedGame;
+    userRole: 'w' | 'b' | 'spectator';
     onBack: () => void;
 }
 
-export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
+export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => {
     const [game, setGame] = useState(() => new Game(savedGame.fen));
     const [fen, setFen] = useState(game.fen);
     const [history, setHistory] = useState<string[]>(game.history());
@@ -171,6 +172,16 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
     }, [savedGame.id, savedGame.winner, game.fen]);
 
     const onDrop = (from: string, to: string) => {
+        // Security Check
+        if (userRole === 'spectator') {
+            alert('⛔ SPECTATOR MODE: You cannot move pieces.');
+            return;
+        }
+        if (userRole !== game.turn) {
+            alert(`⛔ NOT YOUR TURN: It is ${game.turn === 'w' ? 'White' : 'Black'}'s turn.`);
+            return;
+        }
+
         const move = game.move(from, to);
         if (move) {
             updateGame();
@@ -178,6 +189,16 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
     };
 
     const onCoordinateMove = (from: string, to: string) => {
+        // Security Check
+        if (userRole === 'spectator') {
+            alert('⛔ SPECTATOR MODE: You cannot move pieces.');
+            return;
+        }
+        if (userRole !== game.turn) {
+            alert(`⛔ NOT YOUR TURN: It is ${game.turn === 'w' ? 'White' : 'Black'}'s turn.`);
+            return;
+        }
+
         const move = game.move(from, to);
         if (move) {
             updateGame();
@@ -187,20 +208,24 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
     }
 
     const resetGame = () => {
+        if (userRole === 'spectator') return;
         game.reset();
         updateGame();
         setIsResetConfirming(false);
     };
 
     const handleResign = () => {
-        const loser = game.turn;
-        const winner = loser === 'w' ? 'b' : 'w';
+        if (userRole === 'spectator') return;
+        const loser = game.turn; // Or the userRole? Usually resigns the current user.
+        // Actually, if I resign, I lose.
+        const winner = userRole === 'w' ? 'b' : 'w';
         const resultText = `VICTORIA (RENDICION): ${winner === 'w' ? savedGame.whitePlayer : savedGame.blackPlayer}`;
         concludeGame(winner, resultText);
         setIsResignConfirming(false);
     };
 
     const handleDraw = () => {
+        if (userRole === 'spectator') return;
         concludeGame('draw', 'EMPATE (ACORDADO)');
         setIsDrawConfirming(false);
     };
@@ -210,10 +235,99 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
     const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
     return (
-        <div className="flex flex-col xl:flex-row items-center justify-center gap-4 w-full min-h-screen bg-ai-bg p-3 text-ai-text relative z-10 overflow-hidden">
+        <div className="flex flex-col xl:flex-row items-start justify-center gap-8 w-full min-h-screen bg-ai-bg p-6 text-ai-text relative z-10 overflow-hidden">
 
-            {/* Left Column: Board and Coordinate Input */}
-            <div className="flex flex-col items-center gap-3">
+            {/* LEFT COLUMN: White Player & Controls */}
+            <div className="flex flex-col gap-4 w-full max-w-[250px] order-2 xl:order-1">
+                {/* White Player Info */}
+                <div className={`bg-gradient-to-br from-ai-panel to-ai-bg p-4 border-2 ${game.turn === 'w' ? 'border-white shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'border-ai-accent'} rounded-lg backdrop-blur-sm transition-all`}>
+                    <div className="flex items-center justify-between mb-2 border-b border-slate-600 pb-2">
+                        <span className="font-bold text-lg uppercase tracking-widest text-white">
+                            {savedGame.whitePlayer}
+                        </span>
+                        <span className="text-xs bg-white text-black px-2 py-0.5 rounded font-bold">WHITE</span>
+                    </div>
+                    <CapturedPieces captured={capturedWhite} color="b" />
+                    {game.turn === 'w' && <div className="mt-2 text-xs text-center text-white animate-pulse font-bold">⚡ YOUR TURN</div>}
+                </div>
+
+                {/* Game Controls (Only visible if playing) */}
+                {userRole !== 'spectator' && !savedGame.winner && (
+                    <div className="flex flex-col gap-2 bg-black/30 p-3 rounded-lg border border-slate-700">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">COMMANDS</h4>
+
+                        {/* Resign Button */}
+                        {isResignConfirming ? (
+                            <div className="flex gap-1">
+                                <button onClick={handleResign} className="flex-1 px-2 py-1 bg-red-600 text-white font-bold uppercase text-[10px] rounded hover:bg-red-500">CONFIRM</button>
+                                <button onClick={() => setIsResignConfirming(false)} className="flex-1 px-2 py-1 bg-slate-600 text-white font-bold uppercase text-[10px] rounded hover:bg-slate-500">CANCEL</button>
+                            </div>
+                        ) : (
+                            <button onClick={() => setIsResignConfirming(true)} className="w-full px-2 py-2 bg-slate-800 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50 font-bold uppercase tracking-wider text-[10px] rounded transition-all">
+                                🏳 RESIGN
+                            </button>
+                        )}
+
+                        {/* Draw Button */}
+                        {isDrawConfirming ? (
+                            <div className="flex gap-1">
+                                <button onClick={handleDraw} className="flex-1 px-2 py-1 bg-yellow-600 text-white font-bold uppercase text-[10px] rounded hover:bg-yellow-500">CONFIRM</button>
+                                <button onClick={() => setIsDrawConfirming(false)} className="flex-1 px-2 py-1 bg-slate-600 text-white font-bold uppercase text-[10px] rounded hover:bg-slate-500">CANCEL</button>
+                            </div>
+                        ) : (
+                            <button onClick={() => setIsDrawConfirming(true)} className="w-full px-2 py-2 bg-slate-800 border border-yellow-900/50 text-yellow-400 hover:text-white hover:bg-yellow-900/50 font-bold uppercase tracking-wider text-[10px] rounded transition-all">
+                                🤝 OFFER DRAW
+                            </button>
+                        )}
+
+                        {/* Emergency Undo */}
+                        {!savedGame.undoUsed && history.length > 0 && (
+                            <button
+                                onClick={async () => {
+                                    if (confirm('⚠ EMERGENCY UNDO: Only 1 use per game. Proceed?')) {
+                                        game.undo();
+                                        const newFen = game.fen;
+                                        setFen(newFen);
+                                        setHistory(game.history());
+                                        calculateCaptured();
+                                        const updatedGame = { ...savedGame, fen: newFen, lastUpdated: Date.now(), undoUsed: true };
+                                        await saveGame(updatedGame);
+                                        window.location.reload();
+                                    }
+                                }}
+                                className="w-full px-2 py-2 bg-purple-900/30 border border-purple-500 text-purple-300 hover:bg-purple-900/50 hover:text-white font-bold uppercase tracking-wider text-[10px] rounded transition-all"
+                            >
+                                ⏪ EMERGENCY UNDO
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                <button onClick={onBack} className="w-full px-2 py-3 bg-slate-800 text-slate-400 font-bold uppercase tracking-wider border border-slate-700 hover:bg-slate-700 hover:text-white transition-all text-xs rounded">
+                    ← EXIT TO DASHBOARD
+                </button>
+            </div>
+
+
+            {/* CENTER COLUMN: Board */}
+            <div className="flex flex-col items-center gap-4 order-1 xl:order-2">
+                {/* Status Bar */}
+                <div className="flex items-center gap-4 bg-black/50 px-6 py-2 rounded-full border border-ai-accent/30 backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400 uppercase tracking-wider">ROLE:</span>
+                        <span className={`font-bold text-sm uppercase ${userRole === 'w' ? 'text-white' : userRole === 'b' ? 'text-slate-400' : 'text-ai-highlight'}`}>
+                            {userRole === 'w' ? '⚪ COMMANDER (WHITE)' : userRole === 'b' ? '⚫ COMMANDER (BLACK)' : '👁 SPECTATOR'}
+                        </span>
+                    </div>
+                    <div className="w-px h-4 bg-slate-600"></div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400 uppercase tracking-wider">TURN:</span>
+                        <span className={`font-bold text-sm uppercase ${game.turn === 'w' ? 'text-white' : 'text-slate-400'}`}>
+                            {game.turn === 'w' ? 'WHITE' : 'BLACK'}
+                        </span>
+                    </div>
+                </div>
+
                 {/* Board with external coordinates */}
                 <div className="relative py-6 px-8">
                     {/* Left rank numbers (8-1) */}
@@ -231,7 +345,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
                     </div>
 
                     {/* Board */}
-                    <div className="grid grid-cols-8 grid-rows-8 aspect-square w-full min-h-[75vh] max-w-[75vh] border-4 border-ai-accent shadow-[0_0_30px_rgba(0,255,255,0.3),inset_0_0_30px_rgba(0,255,255,0.1)] bg-gradient-to-br from-ai-panel to-ai-bg rounded-lg overflow-hidden relative">
+                    <div className="grid grid-cols-8 grid-rows-8 aspect-square w-full min-h-[65vh] max-w-[65vh] border-4 border-ai-accent shadow-[0_0_30px_rgba(0,255,255,0.3),inset_0_0_30px_rgba(0,255,255,0.1)] bg-gradient-to-br from-ai-panel to-ai-bg rounded-lg overflow-hidden relative">
                         {/* Animated border glow */}
                         <div className="absolute inset-0 rounded-lg animate-[glow-pulse_3s_ease-in-out_infinite] pointer-events-none"></div>
                         {ranks.map((rank, rIndex) =>
@@ -245,6 +359,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
                                         isBlack={(rIndex + fIndex) % 2 === 1}
                                         onDrop={onDrop}
                                         fen={fen}
+                                        userRole={userRole}
                                     />
                                 );
                             })
@@ -258,26 +373,33 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
                         ))}
                     </div>
                 </div>
-                <CoordinateInput onMove={onCoordinateMove} />
+
+                {/* Coordinate Input (Only for players) */}
+                {userRole !== 'spectator' && <CoordinateInput onMove={onCoordinateMove} />}
             </div>
 
-            {/* Right Column: Info Panel */}
-            <div className="flex flex-col gap-2 w-full max-w-[220px]">
-
+            {/* RIGHT COLUMN: Black Player & Info */}
+            <div className="flex flex-col gap-4 w-full max-w-[250px] order-3">
                 {/* Black Player Info */}
-                <div className="bg-gradient-to-br from-ai-panel to-ai-bg p-2 border border-ai-accent shadow-[0_0_10px_rgba(0,255,255,0.2)] rounded-md backdrop-blur-sm">
-                    <span className="font-bold text-sm uppercase tracking-widest mb-1 border-b border-slate-600 pb-1 block text-ai-text">
-                        {savedGame.blackPlayer || 'NEGRAS'}
-                    </span>
+                <div className={`bg-gradient-to-br from-ai-panel to-ai-bg p-4 border-2 ${game.turn === 'b' ? 'border-slate-400 shadow-[0_0_15px_rgba(100,116,139,0.4)]' : 'border-ai-accent'} rounded-lg backdrop-blur-sm transition-all`}>
+                    <div className="flex items-center justify-between mb-2 border-b border-slate-600 pb-2">
+                        <span className="font-bold text-lg uppercase tracking-widest text-ai-text">
+                            {savedGame.blackPlayer}
+                        </span>
+                        <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-bold border border-slate-600">BLACK</span>
+                    </div>
                     <CapturedPieces captured={capturedBlack} color="w" />
+                    {game.turn === 'b' && <div className="mt-2 text-xs text-center text-slate-300 animate-pulse font-bold">⚡ YOUR TURN</div>}
                 </div>
 
-                {/* White Player Info */}
-                <div className="bg-gradient-to-br from-ai-panel to-ai-bg p-2 border border-ai-accent shadow-[0_0_10px_rgba(0,255,255,0.2)] rounded-md backdrop-blur-sm">
-                    <span className="font-bold text-sm uppercase tracking-widest mb-1 border-b border-slate-600 pb-1 block text-ai-text">
-                        {savedGame.whitePlayer || 'BLANCAS'}
-                    </span>
-                    <CapturedPieces captured={capturedWhite} color="b" />
+                {/* Log */}
+                <div className="w-full bg-gradient-to-br from-ai-panel to-ai-bg p-2 border border-ai-accent shadow-[0_0_10px_rgba(0,255,255,0.2)] rounded-md backdrop-blur-sm flex-1 min-h-[200px]">
+                    <h3 className="font-bold mb-1 text-[9px] text-ai-highlight uppercase tracking-widest border-b border-ai-accent pb-0.5">📡 MISSION LOG:</h3>
+                    <div className="text-[10px] break-words text-ai-accent font-mono h-full max-h-[300px] overflow-y-auto p-1.5 bg-black bg-opacity-50 rounded border border-ai-accent border-opacity-30">
+                        {history.map((move, i) => (
+                            <span key={i} className="mr-2 inline-block">{i % 2 === 0 ? `${Math.floor(i / 2) + 1}.` : ''}{move}</span>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Opening Detection Bot */}
@@ -288,117 +410,6 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
                         description={detectedOpening.description}
                     />
                 )}
-
-                {/* Turn Indicator */}
-                <div className="text-[9px] text-ai-text uppercase tracking-widest bg-gradient-to-r from-ai-panel to-ai-bg px-2 py-1.5 border border-ai-accent shadow-[0_0_10px_rgba(0,255,255,0.3)] text-center rounded-md">
-                    TURNO: <span className="font-bold text-ai-highlight">{game.turn === 'w' ? 'BLANCAS' : 'NEGRAS'}</span>
-                </div>
-
-                {/* Game Controls */}
-                <div className="flex flex-col gap-1">
-                    {/* Resign Button */}
-                    {isResignConfirming ? (
-                        <div className="flex gap-1">
-                            <button onClick={handleResign} className="flex-1 px-1.5 py-0.5 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold uppercase tracking-wider border border-red-500 hover:shadow-[0_0_10px_rgba(255,0,0,0.3)] text-[9px] animate-pulse rounded">
-                                ¿RENDIRSE?
-                            </button>
-                            <button onClick={() => setIsResignConfirming(false)} className="flex-1 px-1.5 py-0.5 bg-slate-500 text-white font-bold uppercase tracking-wider border border-slate-700 hover:bg-slate-400 text-[9px] rounded">
-                                NO
-                            </button>
-                        </div>
-                    ) : (
-                        <button onClick={() => setIsResignConfirming(true)} disabled={!!savedGame.winner} className="w-full px-2 py-1 bg-gradient-to-r from-orange-700 to-red-700 text-white font-bold uppercase tracking-wider border border-orange-500 hover:shadow-[0_0_10px_rgba(255,127,0,0.3)] transition-all text-[9px] disabled:opacity-30 disabled:cursor-not-allowed rounded">
-                            🏳 RENDIRSE
-                        </button>
-                    )}
-
-                    {/* Draw Button */}
-                    {isDrawConfirming ? (
-                        <div className="flex gap-1">
-                            <button onClick={handleDraw} className="flex-1 px-1.5 py-0.5 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white font-bold uppercase tracking-wider border border-yellow-500 hover:shadow-[0_0_10px_rgba(255,255,0,0.3)] text-[9px] animate-pulse rounded">
-                                ¿TABLAS?
-                            </button>
-                            <button onClick={() => setIsDrawConfirming(false)} className="flex-1 px-1.5 py-0.5 bg-slate-500 text-white font-bold uppercase tracking-wider border border-slate-700 hover:bg-slate-400 text-[9px] rounded">
-                                NO
-                            </button>
-                        </div>
-                    ) : (
-                        <button onClick={() => setIsDrawConfirming(true)} disabled={!!savedGame.winner} className="w-full px-2 py-1 bg-gradient-to-r from-yellow-700 to-yellow-800 text-white font-bold uppercase tracking-wider border border-yellow-500 hover:shadow-[0_0_10px_rgba(255,255,0,0.3)] transition-all text-[9px] disabled:opacity-30 disabled:cursor-not-allowed rounded">
-                            🤝 TABLAS
-                        </button>
-                    )}
-
-                    {/* Reset Button */}
-                    {isResetConfirming ? (
-                        <div className="flex gap-1">
-                            <button onClick={resetGame} className="flex-1 px-1.5 py-0.5 bg-gradient-to-r from-ai-accent to-ai-highlight text-white font-bold uppercase tracking-wider border border-ai-accent hover:shadow-[0_0_10px_rgba(0,255,255,0.3)] text-[9px] animate-pulse rounded">
-                                ¿REINICIAR?
-                            </button>
-                            <button onClick={() => setIsResetConfirming(false)} className="flex-1 px-1.5 py-0.5 bg-slate-500 text-white font-bold uppercase tracking-wider border border-slate-700 hover:bg-slate-400 text-[9px] rounded">
-                                NO
-                            </button>
-                        </div>
-                    ) : (
-                        <button onClick={() => setIsResetConfirming(true)} className="w-full px-2 py-1 bg-gradient-to-r from-ai-accent to-ai-highlight text-ai-bg font-bold uppercase tracking-wider border border-ai-accent hover:shadow-[0_0_10px_rgba(0,255,255,0.3)] transition-all text-[9px] rounded">
-                            REINICIAR
-                        </button>
-                    )}
-
-                    <button onClick={onBack} className="w-full px-2 py-1.5 bg-gradient-to-r from-slate-700 to-slate-800 text-ai-accent font-bold uppercase tracking-wider border border-ai-accent hover:shadow-[0_0_10px_rgba(0,255,255,0.2)] transition-all text-[10px] rounded">
-                        ← VOLVER
-                    </button>
-
-                    {/* Emergency Undo Button */}
-                    {!savedGame.undoUsed && !savedGame.winner && history.length > 0 && (
-                        <button
-                            onClick={async () => {
-                                if (confirm('⚠ EMERGENCY UNDO: Solo puedes usar esto UNA VEZ por partida. ¿Retroceder el último movimiento?')) {
-                                    game.undo(); // Undo last move
-
-                                    // Update game state
-                                    const newFen = game.fen;
-                                    setFen(newFen);
-                                    setHistory(game.history());
-                                    calculateCaptured();
-
-                                    // Save with undoUsed flag
-                                    const updatedGame = {
-                                        ...savedGame,
-                                        fen: newFen,
-                                        lastUpdated: Date.now(),
-                                        undoUsed: true
-                                    };
-                                    await saveGame(updatedGame);
-
-                                    // Force update parent state if needed (though Board uses local savedGame prop, we might need to reload page or update prop? 
-                                    // Actually, Board receives savedGame as prop, but we are mutating local state mostly. 
-                                    // Ideally we should update the prop or local state that reflects savedGame.
-                                    // Since we don't have a setSavedGame prop, we rely on the fact that we just saved it to storage.
-                                    // But for UI to update immediately (disable button), we need to reflect that.
-                                    // We can't mutate props. We might need a local state for undoUsed if we want immediate feedback without reload.
-                                    // However, let's just reload the page or rely on parent re-render? 
-                                    // Better: The parent Dashboard passes savedGame. If we update storage, parent doesn't know.
-                                    // Let's reload the page to be safe and simple, or just accept that it might not update until next interaction?
-                                    // Actually, let's just force a reload for now to ensure consistency, or better, just hide the button locally.
-                                    window.location.reload();
-                                }
-                            }}
-                            className="w-full px-2 py-1.5 bg-gradient-to-r from-purple-700 to-pink-700 text-white font-bold uppercase tracking-wider border border-purple-500 hover:shadow-[0_0_15px_rgba(255,0,255,0.4)] transition-all text-[10px] rounded animate-pulse mt-1"
-                        >
-                            ⏪ EMERGENCY UNDO (1 LEFT)
-                        </button>
-                    )}
-                </div>
-
-                {/* Log */}
-                <div className="w-full bg-gradient-to-br from-ai-panel to-ai-bg p-2 border border-ai-accent shadow-[0_0_10px_rgba(0,255,255,0.2)] rounded-md backdrop-blur-sm">
-                    <h3 className="font-bold mb-1 text-[9px] text-ai-highlight uppercase tracking-widest border-b border-ai-accent pb-0.5">📡 LOG:</h3>
-                    <div className="text-[9px] break-words text-ai-accent font-mono h-20 overflow-y-auto p-1.5 bg-black bg-opacity-50 rounded border border-ai-accent border-opacity-30">
-                        {history.map((move, i) => (
-                            <span key={i} className="mr-2">{i % 2 === 0 ? `${Math.floor(i / 2) + 1}.` : ''}{move}</span>
-                        ))}
-                    </div>
-                </div>
 
                 {/* Simulation / Learning Panels */}
                 {savedGame.mode === 'simulation' && !savedGame.winner && (
@@ -435,8 +446,9 @@ export const Board: React.FC<BoardProps> = ({ savedGame, onBack }) => {
 };
 
 // Componente auxiliar para extraer la pieza de la casilla de manera reactiva
-const SquareWrapper = ({ game, square, isBlack, onDrop, fen }: any) => {
+const SquareWrapper = ({ game, square, isBlack, onDrop, fen, userRole }: any) => {
     const piece = game.getPiece(square);
+    const canDrag = userRole !== 'spectator' && piece?.color === userRole;
 
     return (
         <Square
@@ -444,6 +456,7 @@ const SquareWrapper = ({ game, square, isBlack, onDrop, fen }: any) => {
             piece={piece}
             isBlack={isBlack}
             onDrop={onDrop}
+            canDrag={canDrag}
         />
     );
 }

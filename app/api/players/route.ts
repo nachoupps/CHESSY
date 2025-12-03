@@ -44,10 +44,14 @@ export async function GET() {
 // POST /api/players - Register new player
 export async function POST(request: Request) {
     try {
-        const { name } = await request.json();
+        const { name, pin } = await request.json();
 
         if (!name || typeof name !== 'string') {
             return NextResponse.json({ error: 'Invalid player name' }, { status: 400 });
+        }
+
+        if (!pin || typeof pin !== 'string' || pin.length !== 4) {
+            return NextResponse.json({ error: 'Invalid PIN (must be 4 digits)' }, { status: 400 });
         }
 
         // Check if player already exists
@@ -65,7 +69,8 @@ export async function POST(request: Request) {
             elo: 10,
             wins: 0,
             losses: 0,
-            draws: 0
+            draws: 0,
+            pin
         };
 
         // Use hset for atomic addition (field is ID)
