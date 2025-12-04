@@ -19,11 +19,23 @@ export default function Home() {
   return (
     <DndProvider backend={HTML5Backend}>
       <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-ai-bg relative z-10">
-        <div className="fixed top-0 left-0 w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white text-center py-2 font-bold uppercase tracking-widest z-50 shadow-[0_0_20px_rgba(0,255,0,0.5)] border-b border-green-400">
-          🚀 UPDATE LIVE: SECURE UI v2.3
-        </div>
-        <h1 className="text-6xl font-bold mb-12 text-transparent bg-clip-text bg-gradient-to-r from-ai-accent via-ai-highlight to-ai-accent animate-[gradient-shift_3s_ease_infinite] tracking-wider drop-shadow-[0_0_30px_rgba(0,255,255,0.8)]" style={{ backgroundSize: '200% 200%' }}>
-          CHESSY
+        <h1 className="text-6xl font-bold mb-12 text-transparent bg-clip-text bg-gradient-to-r from-ai-accent via-ai-highlight to-ai-accent animate-[gradient-shift_3s_ease_infinite] tracking-wider drop-shadow-[0_0_30px_rgba(0,255,255,0.8)] flex items-end" style={{ backgroundSize: '200% 200%' }}>
+          CHESS
+          <div className="relative inline-block">
+            Y
+            {/* Antenna Broadcasting */}
+            <div className="absolute bottom-[75%] left-1/2 -translate-x-1/2 flex flex-col items-center">
+              {/* Version Tag */}
+              <div className="mb-1 bg-black/80 border border-ai-highlight px-1.5 py-0.5 rounded text-[8px] font-mono text-ai-highlight whitespace-nowrap shadow-[0_0_10px_rgba(0,255,255,0.8)] animate-pulse">
+                v2.3
+              </div>
+              {/* Antenna Stem */}
+              <div className="w-0.5 h-4 bg-ai-highlight shadow-[0_0_5px_rgba(0,255,255,0.8)]"></div>
+              {/* Signal Waves */}
+              <div className="absolute bottom-2 w-8 h-8 border-t-2 border-ai-highlight rounded-full animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite] opacity-50"></div>
+              <div className="absolute bottom-2 w-12 h-12 border-t-2 border-ai-highlight rounded-full animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.5s] opacity-30"></div>
+            </div>
+          </div>
         </h1>
 
         {currentGame ? (
