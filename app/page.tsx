@@ -19,12 +19,14 @@ export default function Home() {
   return (
     <DndProvider backend={HTML5Backend}>
       <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-ai-bg relative z-10">
-        <h1 className="text-6xl font-bold mb-12 text-transparent bg-clip-text bg-gradient-to-r from-ai-accent via-ai-highlight to-ai-accent animate-[gradient-shift_3s_ease_infinite] tracking-wider drop-shadow-[0_0_30px_rgba(0,255,255,0.8)] flex items-end" style={{ backgroundSize: '200% 200%' }}>
-          CHESS
-          <div className="relative inline-block">
+        <h1 className="text-6xl font-bold mb-12 flex items-end tracking-wider drop-shadow-[0_0_30px_rgba(0,255,255,0.8)]">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-ai-accent via-ai-highlight to-ai-accent animate-[gradient-shift_3s_ease_infinite]" style={{ backgroundSize: '200% 200%' }}>
+            CHESS
+          </span>
+          <div className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-ai-accent via-ai-highlight to-ai-accent animate-[gradient-shift_3s_ease_infinite]" style={{ backgroundSize: '200% 200%' }}>
             Y
             {/* Antenna Broadcasting */}
-            <div className="absolute bottom-[75%] left-1/2 -translate-x-1/2 flex flex-col items-center">
+            <div className="absolute bottom-[75%] left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
               {/* Version Tag */}
               <div className="mb-1 bg-black/80 border border-ai-highlight px-1.5 py-0.5 rounded text-[8px] font-mono text-ai-highlight whitespace-nowrap shadow-[0_0_10px_rgba(0,255,255,0.8)] animate-pulse">
                 v2.3
