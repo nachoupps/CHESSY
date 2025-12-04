@@ -48,8 +48,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
         try {
             const start = Date.now();
             const [gamesRes, playersRes] = await Promise.all([
-                fetch('/api/games', { cache: 'no-store' }),
-                fetch('/api/players', { cache: 'no-store' })
+                fetch('/api/games', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } }),
+                fetch('/api/players', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } })
             ]);
 
             const latency = Date.now() - start;
@@ -133,13 +133,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
         if (code === "0000") {
             if (confirm("⚠ WARNING: THIS WILL PERMANENTLY DELETE ALL AGENTS. PROCEED?")) {
                 setSaving(true);
-                const success = await clearPlayers(code);
-                if (success) {
-                    await loadData();
-                } else {
-                    alert("⛔ FAILED TO CLEAR DATABASE");
+                try {
+                    const success = await clearPlayers(code);
+                    if (success) {
+                        console.log("✅ All players cleared successfully.");
+                        alert("✅ ALL PLAYERS CLEARED");
+                        setPlayers([]); // reset local state
+                        await loadData();
+                    } else {
+                        console.error("⛔ Failed to clear players.");
+                        alert("⛔ FAILED TO CLEAR PLAYERS");
+                    }
+                } catch (error) {
+                    console.error("Error clearing players:", error);
+                    alert("⛔ AN ERROR OCCURRED WHILE CLEARING PLAYERS");
+                } finally {
+                    setSaving(false);
                 }
-                setSaving(false);
             }
         } else if (code !== null) {
             alert("⛔ ACCESS DENIED: INVALID SECURITY CODE");
@@ -151,14 +161,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
         if (code === "0000") {
             if (confirm("⚠ WARNING: THIS WILL PERMANENTLY DELETE ALL MISSIONS (ACTIVE AND ARCHIVED). PROCEED?")) {
                 setSaving(true);
-                const success = await clearAllGames(code);
-                if (success) {
-                    await loadData();
-                    alert("✅ ALL MISSIONS DELETED SUCCESSFULLY");
-                } else {
-                    alert("⛔ FAILED TO DELETE MISSIONS");
+                try {
+                    const success = await clearAllGames(code);
+                    if (success) {
+                        console.log("✅ All missions cleared successfully.");
+                        alert("✅ ALL MISSIONS DELETED SUCCESSFULLY");
+                        setGames([]); // Reset local state immediately
+                        await loadData();
+                    } else {
+                        console.error("⛔ Failed to delete missions.");
+                        alert("⛔ FAILED TO DELETE MISSIONS");
+                    }
+                } catch (error) {
+                    console.error("Error clearing missions:", error);
+                    alert("⛔ AN ERROR OCCURRED WHILE DELETING MISSIONS");
+                } finally {
+                    setSaving(false);
                 }
-                setSaving(false);
             }
         } else if (code !== null) {
             alert("⛔ ACCESS DENIED: INVALID SECURITY CODE");
@@ -171,6 +190,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
         if (role === 'spectator') {
             onSelectGame(selectedGameForLogin, 'spectator');
             setSelectedGameForLogin(null);
+            return;
+        }
+
+        // Ensure PIN is entered before proceeding
+        if (!loginPin) {
+            setLoginError('⛔ ACCESS DENIED: PLEASE ENTER PIN');
             return;
         }
 
@@ -330,7 +355,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                         </h3>
                         <div className="flex gap-2 items-center flex-wrap justify-end">
                             {lastUpdated && (
-                                <span className="text-[10px] text-slate-500 font-mono hidden sm:inline-block">
+                                <span className="text-[9px] text-slate-500 font-mono hidden sm:inline-block">
                                     UPDATED: {lastUpdated.toLocaleTimeString()}
                                 </span>
                             )}
@@ -489,9 +514,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
             <div className="fixed bottom-1 right-1 flex flex-col items-end gap-1 pointer-events-auto">
                 <button
                     onClick={() => setShowDebug(!showDebug)}
-                    className="text-[9px] text-slate-600 font-mono opacity-50 hover:opacity-100 transition-opacity"
+                    className="text-[8px] text-slate-600 font-mono opacity-50 hover:opacity-100 transition-opacity"
                 >
-                    v2.2 - SECURE UI (DEBUG)
+                    v2.3 - SECURE UI (DEBUG)
                 </button>
 
                 {showDebug && (
