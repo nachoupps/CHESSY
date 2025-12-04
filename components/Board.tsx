@@ -264,7 +264,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                             </div>
                         ) : (
                             <button onClick={() => setIsResignConfirming(true)} className="w-full px-2 py-2 bg-slate-800 border border-red-900/50 text-red-400 hover:text-white hover:bg-red-900/50 font-bold uppercase tracking-wider text-[10px] rounded transition-all">
-                                🏳 RESIGN
+                                🏳 SURRENDER
                             </button>
                         )}
 
@@ -276,7 +276,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                             </div>
                         ) : (
                             <button onClick={() => setIsDrawConfirming(true)} className="w-full px-2 py-2 bg-slate-800 border border-yellow-900/50 text-yellow-400 hover:text-white hover:bg-yellow-900/50 font-bold uppercase tracking-wider text-[10px] rounded transition-all">
-                                🤝 OFFER DRAW
+                                🤝 OFFER PEACE
                             </button>
                         )}
 
@@ -284,7 +284,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                         {!savedGame.undoUsed && history.length > 0 && (
                             <button
                                 onClick={async () => {
-                                    if (confirm('⚠ EMERGENCY UNDO: Only 1 use per game. Proceed?')) {
+                                    if (confirm('⚠ TIME WARP: Only 1 use per game. Proceed?')) {
                                         game.undo();
                                         const newFen = game.fen;
                                         setFen(newFen);
@@ -297,14 +297,14 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                                 }}
                                 className="w-full px-2 py-2 bg-purple-900/30 border border-purple-500 text-purple-300 hover:bg-purple-900/50 hover:text-white font-bold uppercase tracking-wider text-[10px] rounded transition-all"
                             >
-                                ⏪ EMERGENCY UNDO
+                                ⏳ TIME WARP
                             </button>
                         )}
                     </div>
                 )}
 
                 <button onClick={onBack} className="w-full px-2 py-3 bg-slate-800 text-slate-400 font-bold uppercase tracking-wider border border-slate-700 hover:bg-slate-700 hover:text-white transition-all text-xs rounded">
-                    ← EXIT TO DASHBOARD
+                    ← RETREAT TO HQ
                 </button>
             </div>
 
@@ -316,7 +316,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-slate-400 uppercase tracking-wider">ROLE:</span>
                         <span className={`font-bold text-sm uppercase ${userRole === 'w' ? 'text-white' : userRole === 'b' ? 'text-slate-400' : 'text-ai-highlight'}`}>
-                            {userRole === 'w' ? '⚪ COMMANDER (WHITE)' : userRole === 'b' ? '⚫ COMMANDER (BLACK)' : '👁 SPECTATOR'}
+                            {userRole === 'w' ? '⚪ COMMANDER (WHITE)' : userRole === 'b' ? '⚫ COMMANDER (BLACK)' : '👁 OBSERVER'}
                         </span>
                     </div>
                     <div className="w-px h-4 bg-slate-600"></div>
@@ -389,12 +389,12 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                         <span className="text-xs bg-black text-white px-2 py-0.5 rounded font-bold border border-slate-600">BLACK</span>
                     </div>
                     <CapturedPieces captured={capturedBlack} color="w" />
-                    {game.turn === 'b' && <div className="mt-2 text-xs text-center text-slate-300 animate-pulse font-bold">⚡ YOUR TURN</div>}
+                    {game.turn === 'b' && <div className="mt-2 text-xs text-center text-slate-300 animate-pulse font-bold">⚔️ YOUR MOVE</div>}
                 </div>
 
                 {/* Log */}
                 <div className="w-full bg-gradient-to-br from-ai-panel to-ai-bg p-2 border border-ai-accent shadow-[0_0_10px_rgba(0,255,255,0.2)] rounded-md backdrop-blur-sm flex-1 min-h-[200px]">
-                    <h3 className="font-bold mb-1 text-[9px] text-ai-highlight uppercase tracking-widest border-b border-ai-accent pb-0.5">📡 MISSION LOG:</h3>
+                    <h3 className="font-bold mb-1 text-[9px] text-ai-highlight uppercase tracking-widest border-b border-ai-accent pb-0.5">📜 BATTLE LOG:</h3>
                     <div className="text-[10px] break-words text-ai-accent font-mono h-full max-h-[300px] overflow-y-auto p-1.5 bg-black bg-opacity-50 rounded border border-ai-accent border-opacity-30">
                         {history.map((move, i) => (
                             <span key={i} className="mr-2 inline-block">{i % 2 === 0 ? `${Math.floor(i / 2) + 1}.` : ''}{move}</span>
@@ -414,9 +414,9 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                 {/* Simulation / Learning Panels */}
                 {savedGame.mode === 'simulation' && !savedGame.winner && (
                     <div className="w-full bg-gradient-to-br from-purple-900/80 to-ai-bg p-2 border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)] rounded-md backdrop-blur-sm animate-pulse">
-                        <h3 className="font-bold mb-1 text-[9px] text-purple-300 uppercase tracking-widest border-b border-purple-500 pb-0.5">🔮 AI PREDICTION:</h3>
+                        <h3 className="font-bold mb-1 text-[9px] text-purple-300 uppercase tracking-widest border-b border-purple-500 pb-0.5">🧠 ORACLE PREDICTION:</h3>
                         <div className="text-[10px] text-purple-200 font-mono p-1">
-                            ANALYZING OPPONENT...
+                            ANALYZING STRATEGY...
                             <div className="text-xs font-bold mt-1 text-white">
                                 {game.moves().length > 0 ? `SUGGESTED: ${game.moves()[Math.floor(Math.random() * game.moves().length)]}` : 'NO MOVES'}
                             </div>
@@ -426,7 +426,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
 
                 {savedGame.mode === 'learning' && !savedGame.winner && (
                     <div className="w-full bg-gradient-to-br from-green-900/80 to-ai-bg p-2 border border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] rounded-md backdrop-blur-sm">
-                        <h3 className="font-bold mb-1 text-[9px] text-green-300 uppercase tracking-widest border-b border-green-500 pb-0.5">🎓 HINT:</h3>
+                        <h3 className="font-bold mb-1 text-[9px] text-green-300 uppercase tracking-widest border-b border-green-500 pb-0.5">💡 ADVISOR:</h3>
                         <div className="text-[10px] text-green-200 font-mono p-1">
                             LEGAL MOVES: {game.moves().length}
                             <div className="mt-1">
@@ -434,7 +434,7 @@ export const Board: React.FC<BoardProps> = ({ savedGame, userRole, onBack }) => 
                                     onClick={() => alert(`Try moving: ${game.moves()[Math.floor(Math.random() * game.moves().length)]}`)}
                                     className="px-2 py-1 bg-green-700 text-white rounded text-[9px] font-bold hover:bg-green-600 transition-all"
                                 >
-                                    💡 GET HINT
+                                    💡 GET ADVICE
                                 </button>
                             </div>
                         </div>

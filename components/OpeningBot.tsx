@@ -12,7 +12,7 @@ export const OpeningBot: React.FC<OpeningBotProps> = ({ openingName, eco, descri
     return (
         <div className="bg-gradient-to-r from-ai-highlight to-purple-600 text-white p-3 rounded-lg border-2 border-ai-highlight shadow-[0_0_20px_rgba(255,0,255,0.4)] animate-[float_3s_ease-in-out_infinite]">
             <div className="flex items-start gap-3">
-                <div className="text-3xl animate-pulse">🤖</div>
+                <div className="text-3xl animate-pulse">🧠</div>
                 <div className="flex-1">
                     <div className="text-[10px] font-bold uppercase tracking-wider opacity-80 mb-0.5">
                         AI OPENING DETECTED

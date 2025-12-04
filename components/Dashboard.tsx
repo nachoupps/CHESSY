@@ -224,10 +224,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-gradient-to-br from-ai-panel to-ai-bg border-2 border-ai-highlight p-6 rounded-lg shadow-[0_0_50px_rgba(0,255,255,0.5)] max-w-md w-full animate-in fade-in zoom-in duration-200">
                         <h3 className="text-xl font-bold text-ai-highlight mb-4 uppercase tracking-widest text-center border-b border-ai-accent pb-2">
-                            🔐 SECURITY CHECK
+                            �️ SECURITY CHECK
                         </h3>
                         <p className="text-ai-text text-center mb-6 font-mono text-sm">
-                            IDENTIFY YOURSELF TO ACCESS OPERATION: <br />
+                            IDENTIFY YOURSELF TO ACCESS BATTLEFIELD: <br />
                             <span className="text-white font-bold">{selectedGameForLogin.name}</span>
                         </p>
 
@@ -238,7 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                     onClick={() => handleLogin('w')}
                                     className="p-3 bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white transition-all rounded text-center group"
                                 >
-                                    <div className="text-xs text-slate-400 uppercase mb-1">PLAY AS WHITE</div>
+                                    <div className="text-xs text-slate-400 uppercase mb-1">COMMAND WHITE</div>
                                     <div className="text-lg font-bold text-white group-hover:text-ai-highlight">{selectedGameForLogin.whitePlayer}</div>
                                 </button>
                             </div>
@@ -249,7 +249,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                     onClick={() => handleLogin('b')}
                                     className="p-3 bg-black/30 border border-white/10 hover:bg-black/50 hover:border-ai-accent transition-all rounded text-center group"
                                 >
-                                    <div className="text-xs text-slate-400 uppercase mb-1">PLAY AS BLACK</div>
+                                    <div className="text-xs text-slate-400 uppercase mb-1">COMMAND BLACK</div>
                                     <div className="text-lg font-bold text-white group-hover:text-ai-accent">{selectedGameForLogin.blackPlayer}</div>
                                 </button>
                             </div>
@@ -273,7 +273,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                 onClick={() => handleLogin('spectator')}
                                 className="w-full py-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded uppercase font-bold text-xs tracking-wider transition-all"
                             >
-                                👁 SPECTATE ONLY
+                                👁 OBSERVE BATTLE
                             </button>
                             <button
                                 onClick={() => { setSelectedGameForLogin(null); setLoginPin(''); setLoginError(''); }}
@@ -294,65 +294,65 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
 
                 <form onSubmit={handleCreate} className="flex flex-col gap-4 mb-8 bg-black bg-opacity-50 p-4 border-2 border-ai-accent border-opacity-30 rounded-lg">
                     <div className="flex flex-col gap-1">
-                        <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">📡 OPERATION NAME</label>
+                        <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">⚔️ BATTLEFIELD NAME</label>
                         <input
                             type="text"
                             value={newGameName}
                             onChange={(e) => setNewGameName(e.target.value)}
-                            placeholder="ENTER OPERATION CODE..."
+                            placeholder="ENTER NAME..."
                             className="bg-black bg-opacity-70 border-2 border-ai-accent border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-accent focus:shadow-[0_0_15px_rgba(0,255,255,0.4)] placeholder-ai-text placeholder-opacity-40 uppercase transition-all"
                             required
                         />
                     </div>
                     <div className="flex gap-2">
                         <div className="flex flex-col gap-1 flex-1">
-                            <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">⚪ WHITE AGENT</label>
+                            <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">♔ WHITE COMMANDER</label>
                             <select
                                 value={whitePlayer}
                                 onChange={(e) => setWhitePlayer(e.target.value)}
                                 className="w-full bg-black bg-opacity-70 border-2 border-ai-accent border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-accent focus:shadow-[0_0_15px_rgba(0,255,255,0.4)] uppercase transition-all"
                                 required
                             >
-                                <option value="">SELECCIONAR</option>
+                                <option value="">SELECT</option>
                                 {players.map(p => <option key={p.id} value={p.name}>{p.name} ({p.elo})</option>)}
                             </select>
                         </div>
                         <div className="flex flex-col gap-1 flex-1">
-                            <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">⚫ BLACK AGENT</label>
+                            <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">♚ BLACK COMMANDER</label>
                             <select
                                 value={blackPlayer}
                                 onChange={(e) => setBlackPlayer(e.target.value)}
                                 className="w-full bg-black bg-opacity-70 border-2 border-ai-accent border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-accent focus:shadow-[0_0_15px_rgba(0,255,255,0.4)] uppercase transition-all"
                                 required
                             >
-                                <option value="">SELECCIONAR</option>
+                                <option value="">SELECT</option>
                                 {players.map(p => <option key={p.id} value={p.name}>{p.name} ({p.elo})</option>)}
                             </select>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">🎮 MISSION MODE</label>
+                        <label className="text-xs uppercase text-ai-accent tracking-wider font-bold">📜 BATTLE MODE</label>
                         <select
                             value={gameMode}
                             onChange={(e) => setGameMode(e.target.value as any)}
                             className="w-full bg-black bg-opacity-70 border-2 border-ai-accent border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-accent focus:shadow-[0_0_15px_rgba(0,255,255,0.4)] uppercase transition-all"
                         >
-                            <option value="normal">⚔️ RANKED MISSION (NORMAL)</option>
-                            <option value="learning">🎓 TRAINING (NO ELO + HINTS)</option>
-                            <option value="simulation">🔮 SIMULATION (AI ANALYSIS)</option>
+                            <option value="normal">🏆 RANKED MATCH (NORMAL)</option>
+                            <option value="learning">♟️ TRAINING (NO ELO + HINTS)</option>
+                            <option value="simulation">🧠 SIMULATION (AI ANALYSIS)</option>
                         </select>
                     </div>
 
                     <button type="submit" disabled={saving || loading} className="bg-gradient-to-r from-ai-accent to-ai-highlight text-ai-bg font-bold py-3 px-6 rounded-lg shadow-[0_0_20px_rgba(0,255,255,0.5)] hover:shadow-[0_0_30px_rgba(0,255,255,0.8)] active:scale-95 transition-all uppercase tracking-widest border-2 border-ai-accent disabled:opacity-50 disabled:cursor-not-allowed">
-                        {saving ? '⏳ PROCESANDO...' : '🚀 INICIAR MISION'}
+                        {saving ? '⏳ PREPARING...' : '⚔️ START BATTLE'}
                     </button>
                 </form>
 
                 <div className="space-y-3">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-bold text-ai-accent uppercase tracking-wider flex items-center gap-2">
-                            <span className="animate-pulse">🎯</span> {showArchived ? 'ARCHIVED' : 'ACTIVE'} MISSIONS:
+                            <span className="animate-pulse">�</span> {showArchived ? 'ARCHIVED' : 'ACTIVE'} BATTLES:
                         </h3>
                         <div className="flex gap-2 items-center flex-wrap justify-end">
                             {lastUpdated && (
@@ -371,27 +371,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                 onClick={() => setShowArchived(!showArchived)}
                                 className="text-xs px-3 py-1 bg-ai-panel border border-ai-accent text-ai-accent hover:bg-ai-accent hover:text-ai-bg transition-all rounded uppercase font-bold"
                             >
-                                {showArchived ? '📂 SHOW ACTIVE' : '📁 SHOW ARCHIVED'}
+                                {showArchived ? '� SHOW ACTIVE' : '� SHOW ARCHIVED'}
                             </button>
                             {games.length > 0 && (
                                 <button
                                     onClick={handleClearAllMissions}
                                     disabled={saving || loading}
                                     className="text-xs px-2 py-1 bg-red-900/50 border border-red-500 text-red-400 hover:bg-red-900 hover:text-white transition-all rounded uppercase font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Delete all missions (active and archived)"
+                                    title="Delete all battles"
                                 >
-                                    🗑️ CLEAR ALL
+                                    ☠️ PURGE ALL
                                 </button>
                             )}
                         </div>
                     </div>
                     {loading ? (
                         <p className="text-ai-accent text-center italic font-mono border border-dashed border-ai-accent p-4 rounded animate-pulse">
-                            ⏳ LOADING MISSIONS...
+                            ⏳ LOADING BATTLES...
                         </p>
                     ) : games.filter(g => showArchived ? g.archived : !g.archived).length === 0 ? (
                         <p className="text-slate-400 text-center italic font-mono border border-dashed border-slate-600 p-4 rounded">
-                            {showArchived ? 'NO ARCHIVED GAMES.' : 'NO HAY DATOS DE INTELIGENCIA.'}
+                            {showArchived ? 'NO ARCHIVED BATTLES.' : 'NO ACTIVE BATTLES.'}
                         </p>
                     ) : (
                         games.filter(g => showArchived ? g.archived : !g.archived).sort((a, b) => b.lastUpdated - a.lastUpdated).map((game) => (
@@ -416,7 +416,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                             <span className="text-ai-text">{game.whitePlayer}</span> VS <span className="text-ai-text">{game.blackPlayer}</span>
                                         </p>
                                         <p className="text-[10px] text-slate-500 uppercase mt-1">
-                                            ULTIMO CONTACTO: {new Date(game.lastUpdated).toLocaleDateString()}
+                                            LAST MOVE: {new Date(game.lastUpdated).toLocaleDateString()}
                                         </p>
                                     </div>
                                     <span className="text-ai-highlight font-bold text-xl opacity-0 group-hover:opacity-100 transition-opacity">▶</span>
@@ -429,7 +429,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                         }}
                                         className="absolute top-2 right-2 text-[10px] px-2 py-1 bg-ai-highlight bg-opacity-20 border border-ai-highlight text-ai-highlight hover:bg-ai-highlight hover:text-ai-bg transition-all rounded uppercase font-bold"
                                     >
-                                        📁 ARCHIVE
+                                        � ARCHIVE
                                     </button>
                                 )}
                             </div>
@@ -444,14 +444,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                 {/* Registration */}
                 <div className="bg-gradient-to-br from-ai-panel to-ai-bg border-2 border-ai-highlight shadow-[0_0_25px_rgba(255,0,255,0.3)] p-5 rounded-lg backdrop-blur-sm">
                     <h3 className="text-lg font-bold mb-4 text-ai-highlight uppercase tracking-widest border-b-2 border-ai-highlight pb-2 flex items-center gap-2">
-                        <span>🔮</span> RECRUITMENT
+                        <span>⚜️</span> ENLISTMENT
                     </h3>
                     <form onSubmit={handleRegisterPlayer} className="flex flex-col gap-2">
                         <input
                             type="text"
                             value={newPlayerName}
                             onChange={(e) => setNewPlayerName(e.target.value)}
-                            placeholder="AGENT CODENAME..."
+                            placeholder="COMMANDER NAME..."
                             className="bg-black bg-opacity-70 border-2 border-ai-highlight border-opacity-50 rounded-lg px-4 py-3 text-ai-highlight font-mono focus:outline-none focus:border-ai-highlight focus:shadow-[0_0_15px_rgba(255,0,255,0.4)] placeholder-ai-text placeholder-opacity-40 uppercase w-full transition-all"
                             required
                         />
@@ -466,7 +466,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                             required
                         />
                         <button type="submit" disabled={saving || loading} className="bg-gradient-to-r from-ai-highlight to-purple-600 text-white px-4 py-3 font-bold uppercase tracking-widest border-2 border-ai-highlight hover:shadow-[0_0_25px_rgba(255,0,255,0.6)] active:scale-95 transition-all text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                            {saving ? '⏳ SAVING...' : 'REGISTRAR AGENTE'}
+                            {saving ? '⏳ SAVING...' : 'REGISTER COMMANDER'}
                         </button>
                     </form>
                 </div>
@@ -475,7 +475,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                 <div className="bg-gradient-to-br from-ai-panel to-ai-bg border-2 border-ai-accent shadow-[0_0_25px_rgba(0,255,255,0.3)] p-5 flex-1 rounded-lg backdrop-blur-sm">
                     <h3 className="text-lg font-bold mb-4 text-ai-accent uppercase tracking-widest border-b-2 border-ai-accent pb-2 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                            <span>🏆</span> ELO RANKING
+                            <span>👑</span> GRANDMASTERS
                         </div>
                         {players.length > 0 && (
                             <button
@@ -483,7 +483,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                                 disabled={saving || loading}
                                 className="text-[10px] px-2 py-1 bg-red-900/50 border border-red-500 text-red-400 hover:bg-red-900 hover:text-white transition-all rounded uppercase font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                🗑️ CLEAR
+                                ☠️ PURGE
                             </button>
                         )}
                     </h3>
@@ -491,7 +491,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
                         {loading ? (
                             <p className="text-ai-accent text-center italic font-mono text-sm animate-pulse">⏳ LOADING...</p>
                         ) : players.length === 0 ? (
-                            <p className="text-slate-400 text-center italic font-mono text-sm">SIN AGENTES REGISTRADOS</p>
+                            <p className="text-slate-400 text-center italic font-mono text-sm">NO COMMANDERS</p>
                         ) : (
                             players.sort((a, b) => b.elo - a.elo).map((player, index) => (
                                 <div key={player.id} className="flex justify-between items-center bg-black/20 p-2 border border-slate-600">
