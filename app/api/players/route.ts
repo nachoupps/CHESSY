@@ -63,8 +63,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Player already exists' }, { status: 409 });
         }
 
+        // Generate ID safely
+        let id;
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            id = crypto.randomUUID();
+        } else {
+            // Fallback for environments where crypto.randomUUID is not available
+            id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         const newPlayer: Player = {
-            id: crypto.randomUUID(),
+            id,
             name,
             elo: 10,
             wins: 0,
@@ -77,9 +89,9 @@ export async function POST(request: Request) {
         await kv.hset(PLAYERS_KEY, { [newPlayer.id]: newPlayer });
 
         return NextResponse.json(newPlayer, { status: 201 });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating player:', error);
-        return NextResponse.json({ error: 'Failed to create player' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to create player', details: error.message }, { status: 500 });
     }
 }
 
