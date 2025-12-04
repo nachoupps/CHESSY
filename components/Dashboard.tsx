@@ -111,14 +111,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame }) => {
             return;
         }
         setSaving(true);
-        const player = await registerPlayer(newPlayerName.trim(), newPlayerPin);
-        if (player) {
+        setSaving(true);
+        const result = await registerPlayer(newPlayerName.trim(), newPlayerPin);
+        if (result.success) {
             await loadData();
             setNewPlayerName('');
             setNewPlayerPin('');
             alert('✅ AGENTE REGISTRADO EXITOSAMENTE');
         } else {
-            alert('⛔ ERROR: El agente ya existe o hubo un problema de conexión.');
+            alert(`⛔ ERROR: ${result.error}`);
         }
         setSaving(false);
     };

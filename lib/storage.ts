@@ -34,7 +34,7 @@ export const getPlayers = async (): Promise<Player[]> => {
     }
 };
 
-export const registerPlayer = async (name: string, pin: string): Promise<Player | null> => {
+export const registerPlayer = async (name: string, pin: string): Promise<{ success: boolean, player?: Player, error?: string }> => {
     try {
         const response = await fetch('/api/players', {
             method: 'POST',
@@ -43,15 +43,20 @@ export const registerPlayer = async (name: string, pin: string): Promise<Player 
             cache: 'no-store'
         });
 
+        const data = await response.json();
+
         if (response.status === 409) {
-            return null; // Player already exists
+            return { success: false, error: 'El agente ya existe (Nombre duplicado).' };
         }
 
-        if (!response.ok) throw new Error('Failed to register player');
-        return await response.json();
-    } catch (error) {
+        if (!response.ok) {
+            return { success: false, error: data.error || data.details || 'Error desconocido del servidor.' };
+        }
+
+        return { success: true, player: data };
+    } catch (error: any) {
         console.error('Error registering player:', error);
-        return null;
+        return { success: false, error: error.message || 'Error de conexión.' };
     }
 };
 

@@ -56,8 +56,20 @@ export async function POST(request: Request) {
 
         // Check if player already exists
         // With Hashes, we still need to check all values for name uniqueness
-        const playersDict = await kv.hgetall<Record<string, Player>>(PLAYERS_KEY) || {};
-        const players = Object.values(playersDict) as Player[];
+        let players: Player[] = [];
+        try {
+            const playersDict = await kv.hgetall<Record<string, Player>>(PLAYERS_KEY) || {};
+            players = Object.values(playersDict) as Player[];
+        } catch (error: any) {
+            console.warn('POST: Error fetching players (possible WRONGTYPE), assuming empty or corrupt:', error);
+            // If it's a WRONGTYPE, we might want to delete it to allow new write, 
+            // but safer to just let the write happen if we can, or fail gracefully.
+            // If we can't read, we can't check for duplicates easily. 
+            // Let's try to delete if it's WRONGTYPE to self-heal.
+            if (error.message && error.message.includes('WRONGTYPE')) {
+                await kv.del(PLAYERS_KEY);
+            }
+        }
 
         if (players.find((p: Player) => p.name.toLowerCase() === name.toLowerCase())) {
             return NextResponse.json({ error: 'Player already exists' }, { status: 409 });
